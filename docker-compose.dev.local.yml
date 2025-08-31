@@ -1,0 +1,4 @@
+services:
+    kafka:
+        ports:
+            - 19092:19092
