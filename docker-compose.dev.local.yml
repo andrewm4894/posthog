@@ -2,3 +2,13 @@ services:
     kafka:
         ports:
             - 19092:19092
+    # Network overlay: expose a loopback Kafka inside the ClickHouse container namespace
+    clickhouse-kafka-loopback:
+        image: alpine:3.19
+        command: >-
+            sh -c "apk add --no-cache socat && \
+            socat -d -d TCP-LISTEN:9092,fork,reuseaddr TCP:kafka:9092"
+        network_mode: 'service:clickhouse'
+        depends_on:
+            - clickhouse
+            - kafka

@@ -25,6 +25,43 @@ Common symptom/fix:
   - `python manage.py migrate_clickhouse`
   - `python manage.py generate_demo_data`
 
+Kafka loopback inside ClickHouse (avoid table edits)
+- Problem: Some Kafka ENGINE tables are hardcoded to `localhost:9092` and ClickHouse runs in a container where the broker is `kafka:9092`.
+- Solution: Start a loopback proxy inside the ClickHouse network namespace so `localhost:9092` forwards to `kafka:9092`.
+
+overlay file: `docker-compose.dev.local.yml`
+```
+services:
+    kafka:
+        ports:
+            - 19092:19092
+    # Network overlay: expose a loopback Kafka inside the ClickHouse container namespace
+    clickhouse-kafka-loopback:
+        image: alpine:3.19
+        command: >-
+            sh -c "apk add --no-cache socat && \
+            socat -d -d TCP-LISTEN:9092,fork,reuseaddr TCP:kafka:9092"
+        network_mode: "service:clickhouse"
+        depends_on:
+            - clickhouse
+            - kafka
+```
+
+How to apply:
+- `bin/start` already auto-includes the local overlay; or run:
+```
+docker compose -f docker-compose.dev.yml -f docker-compose.dev.local.yml up -d clickhouse-kafka-loopback
+```
+- Verify inside ClickHouse container:
+```
+docker exec -t posthog-clickhouse-1 sh -lc 'nc -w 2 localhost 9092 < /dev/null >/dev/null 2>&1; echo $?'
+# Expect 0
+```
+
+Why this helps:
+- Existing Kafka ENGINE tables that point to `localhost:9092` work without recreating them.
+- Keeps local dev repeatable with minimal diffs.
+
 Troubleshooting person distinct IDs
 - Symptom: Persons land but Person Distinct IDs stall (e.g. stuck at 0/N).
 - Verify consumers inside ClickHouse:
