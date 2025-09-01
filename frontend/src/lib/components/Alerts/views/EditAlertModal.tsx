@@ -181,6 +181,30 @@ export function EditAlertModal({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [alertForm?.config?.detector_config?.type])
 
+    // Ensure z-score defaults populate the form so selects aren't empty
+    useEffect(() => {
+        const dc: any = alertForm?.config?.detector_config
+        if (dc?.type === 'zscore') {
+            const patch: Record<string, any> = {}
+            if (dc.on == null) {
+                patch.on = 'value'
+            }
+            if (dc.direction == null && dc.two_tailed == null) {
+                patch.direction = 'both'
+            }
+            if (dc.z_threshold == null) {
+                patch.z_threshold = 3.0
+            }
+            if (dc.window == null) {
+                patch.window = 30
+            }
+            if (Object.keys(patch).length > 0) {
+                setAlertFormValue(['config', 'detector_config'], { ...dc, ...patch })
+            }
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [alertForm?.config?.detector_config?.type])
+
     return (
         <LemonModal onClose={onClose} isOpen={isOpen} width={600} simple title="">
             {alertLoading ? (
