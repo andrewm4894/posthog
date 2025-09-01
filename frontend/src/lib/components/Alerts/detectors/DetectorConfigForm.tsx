@@ -42,8 +42,18 @@ export function DetectorConfigForm({ type, config, onChange }: Props): JSX.Eleme
                                 value={config.on ?? 'value'}
                                 onChange={(val) => onChange({ on: val })}
                                 options={[
-                                    { label: 'Value', value: 'value' },
-                                    { label: 'Delta', value: 'delta' },
+                                    {
+                                        label: 'Value',
+                                        value: 'value',
+                                        tooltip:
+                                            'Monitor the actual metric value - good for detecting when metrics exceed absolute thresholds',
+                                    },
+                                    {
+                                        label: 'Delta',
+                                        value: 'delta',
+                                        tooltip:
+                                            'Monitor the change from previous period - good for detecting sudden spikes or drops regardless of absolute value',
+                                    },
                                 ]}
                             />
                         </Tooltip>
@@ -81,9 +91,24 @@ export function DetectorConfigForm({ type, config, onChange }: Props): JSX.Eleme
                                 value={config.direction ?? 'both'}
                                 onChange={(val) => onChange({ direction: val })}
                                 options={[
-                                    { label: 'Both', value: 'both' },
-                                    { label: 'Up', value: 'up' },
-                                    { label: 'Down', value: 'down' },
+                                    {
+                                        label: 'Both',
+                                        value: 'both',
+                                        tooltip:
+                                            'Alert on unusual changes in either direction - most comprehensive monitoring',
+                                    },
+                                    {
+                                        label: 'Up',
+                                        value: 'up',
+                                        tooltip:
+                                            'Only alert on increases/spikes - good for monitoring growth metrics or error rates',
+                                    },
+                                    {
+                                        label: 'Down',
+                                        value: 'down',
+                                        tooltip:
+                                            'Only alert on decreases/drops - good for monitoring engagement or revenue metrics',
+                                    },
                                 ]}
                             />
                         </Tooltip>
@@ -126,8 +151,18 @@ export function DetectorConfigForm({ type, config, onChange }: Props): JSX.Eleme
                                 value={config.on ?? 'value'}
                                 onChange={(val) => onChange({ on: val })}
                                 options={[
-                                    { label: 'Value', value: 'value' },
-                                    { label: 'Delta', value: 'delta' },
+                                    {
+                                        label: 'Value',
+                                        value: 'value',
+                                        tooltip:
+                                            'Monitor the actual metric value - good for detecting when metrics exceed absolute thresholds',
+                                    },
+                                    {
+                                        label: 'Delta',
+                                        value: 'delta',
+                                        tooltip:
+                                            'Monitor the change from previous period - good for detecting sudden spikes or drops regardless of absolute value',
+                                    },
                                 ]}
                             />
                         </Tooltip>
@@ -165,9 +200,24 @@ export function DetectorConfigForm({ type, config, onChange }: Props): JSX.Eleme
                                 value={config.direction ?? 'both'}
                                 onChange={(val) => onChange({ direction: val })}
                                 options={[
-                                    { label: 'Both', value: 'both' },
-                                    { label: 'Up', value: 'up' },
-                                    { label: 'Down', value: 'down' },
+                                    {
+                                        label: 'Both',
+                                        value: 'both',
+                                        tooltip:
+                                            'Alert on unusual changes in either direction - most comprehensive monitoring',
+                                    },
+                                    {
+                                        label: 'Up',
+                                        value: 'up',
+                                        tooltip:
+                                            'Only alert on increases/spikes - good for monitoring growth metrics or error rates',
+                                    },
+                                    {
+                                        label: 'Down',
+                                        value: 'down',
+                                        tooltip:
+                                            'Only alert on decreases/drops - good for monitoring engagement or revenue metrics',
+                                    },
                                 ]}
                             />
                         </Tooltip>
