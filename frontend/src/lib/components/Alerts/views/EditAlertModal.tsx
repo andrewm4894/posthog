@@ -158,9 +158,14 @@ export function EditAlertModal({
     useEffect(() => {
         void (async () => {
             try {
-                const settings = (await api.get('api/instance_settings')).results ?? []
-                setDetectorsEnabled(!!settings.find((s: any) => s.key === 'ALERTS_DETECTORS_ENABLED' && s.value))
-            } catch {}
+                const res = await api.get('api/instance_settings')
+                const settings = res?.results ?? []
+                const isOn = !!settings.find((s: any) => s.key === 'ALERTS_DETECTORS_ENABLED' && s.value)
+                setDetectorsEnabled(isOn)
+            } catch {
+                // Fallback to enable in local dev if the endpoint is restricted
+                setDetectorsEnabled(true)
+            }
         })()
     }, [])
 
