@@ -42,6 +42,24 @@ Key ideas:
   - fields: `window:int`, `on: 'value'|'delta'|'pct_delta'`, `k: float` (scale factor; typical 3.5), `min_points:int=10`
 
 #### Math
+#### ThresholdDetector (back-compat refactor)
+- Purpose: Prove the detector abstraction by migrating the current absolute/relative threshold logic into a `ThresholdDetector` that conforms to the same interface as z-score/MAD.
+- Config:
+  - `type: 'ThresholdConfig'`
+  - `bounds: { lower?: number, upper?: number }`
+  - `on: 'value'|'delta'|'pct_delta'` (default 'value' to match current behavior)
+  - `interval: derived from TrendsQuery interval`, `check_ongoing_interval: bool`
+- Evaluation:
+  - Build the relevant series (current vs previous, or ongoing interval when allowed) reusing existing Trends evaluation.
+  - Compute `value` = chosen scalar (current or previous interval value or diff based on `on`).
+  - Breach if outside bounds.
+- Back-compat behavior:
+  - If an alert has `threshold` populated and no `detector_config`, evaluation path constructs a `ThresholdDetector` config on the fly and runs via the detector framework.
+  - This allows old alerts to continue working while sharing the same execution contract and `AlertCheck` shape as new detectors.
+- Benefits:
+  - Single evaluation pipeline, simpler code paths.
+  - Validates the registry and config patterns before adding more detectors.
+
 - Pre-process series according to `on`:
   - value: `x_t`
   - delta: `x_t - x_{t-1}`
