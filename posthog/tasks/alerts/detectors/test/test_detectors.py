@@ -11,7 +11,7 @@ def test_zscore_value_two_tailed_fires():
     cfg = ZScoreConfig(window=6, on="value", z_threshold=3.0, direction="both", min_points=2)
     res = ZScoreDetectorImpl().evaluate(ctx, cfg)
     assert res.value is not None and abs(res.value) >= 3
-    assert res.breaches and any("|z|" in b or "z=" in b for b in res.breaches)
+    assert res.breaches and any("Z-score alert:" in b for b in res.breaches)
 
 
 def test_zscore_value_up_only():

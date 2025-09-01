@@ -45,15 +45,24 @@ class MADDetectorImpl:
         breaches: list[str] = []
         thr = abs(config.k)
         direction = (config.direction or "both").lower()
+        on_desc = config.on or "value"
+        window = config.window or 30
+
         if direction == "both":
             if abs(robust) >= thr:
-                breaches.append(f"|mad_score|={abs(robust):.2f} >= {thr}")
+                breaches.append(
+                    f"MAD alert: {on_desc.title()} robust score {abs(robust):.1f} exceeds threshold {thr} (direction: {direction}, window: {window}, on: {on_desc})"
+                )
         elif direction == "up":
             if robust >= thr:
-                breaches.append(f"mad_score={robust:.2f} >= {thr}")
+                breaches.append(
+                    f"MAD alert: {on_desc.title()} robust score {robust:.1f} exceeds upward threshold {thr} (window: {window}, on: {on_desc})"
+                )
         elif direction == "down":
             if robust <= -thr:
-                breaches.append(f"mad_score={robust:.2f} <= -{thr}")
+                breaches.append(
+                    f"MAD alert: {on_desc.title()} robust score {robust:.1f} exceeds downward threshold -{thr} (window: {window}, on: {on_desc})"
+                )
 
         return AlertEvaluationResult(value=float(robust), breaches=breaches)
 

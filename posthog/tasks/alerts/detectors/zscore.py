@@ -49,15 +49,24 @@ class ZScoreDetectorImpl:
         breaches: list[str] = []
         thr = abs(config.z_threshold)
         direction = (config.direction or "both").lower()
+        on_desc = config.on or "value"
+        window = config.window or 30
+
         if direction == "both" or config.two_tailed:
             if abs(z) >= thr:
-                breaches.append(f"|z|={abs(z):.2f} >= {thr}")
+                breaches.append(
+                    f"Z-score alert: {on_desc.title()} {abs(z):.1f}σ exceeds threshold {thr}σ (direction: {direction}, window: {window}, on: {on_desc})"
+                )
         elif direction == "up":
             if z >= thr:
-                breaches.append(f"z={z:.2f} >= {thr}")
+                breaches.append(
+                    f"Z-score alert: {on_desc.title()} {z:.1f}σ exceeds upward threshold {thr}σ (window: {window}, on: {on_desc})"
+                )
         elif direction == "down":
             if z <= -thr:
-                breaches.append(f"z={z:.2f} <= -{thr}")
+                breaches.append(
+                    f"Z-score alert: {on_desc.title()} {z:.1f}σ exceeds downward threshold -{thr}σ (window: {window}, on: {on_desc})"
+                )
 
         return AlertEvaluationResult(value=float(z), breaches=breaches)
 
