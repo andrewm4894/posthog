@@ -26,6 +26,7 @@ import { LemonField } from 'lib/lemon-ui/LemonField'
 import { LemonModal } from 'lib/lemon-ui/LemonModal'
 import { IconChevronLeft } from 'lib/lemon-ui/icons'
 import { alphabet, formatDate } from 'lib/utils'
+import { insightVizDataLogic } from 'scenes/insights/insightVizDataLogic'
 import { trendsDataLogic } from 'scenes/trends/trendsDataLogic'
 
 import {
@@ -141,6 +142,7 @@ export function EditAlertModal({
     const { setAlertFormValue } = useActions(formLogic)
 
     const trendsLogic = trendsDataLogic({ dashboardItemId: insightShortId })
+    const vizLogic = insightVizDataLogic({ dashboardItemId: insightShortId })
     const {
         alertSeries,
         isNonTimeSeriesDisplay,
@@ -148,6 +150,8 @@ export function EditAlertModal({
         formulaNodes,
         interval: trendInterval,
     } = useValues(trendsLogic)
+    const { showAlertThresholdLines } = useValues(vizLogic)
+    const { updateInsightFilter } = useActions(vizLogic)
 
     const creatingNewAlert = alertForm.id === undefined
     // can only check ongoing interval for absolute value/increase alerts with upper threshold
@@ -168,6 +172,14 @@ export function EditAlertModal({
             }
         })()
     }, [])
+
+    // If using a non-threshold detector (e.g., zscore), auto-disable threshold lines on the chart
+    useEffect(() => {
+        if (alertForm?.config?.detector_config?.type && showAlertThresholdLines) {
+            updateInsightFilter({ showAlertThresholdLines: false })
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [alertForm?.config?.detector_config?.type])
 
     return (
         <LemonModal onClose={onClose} isOpen={isOpen} width={600} simple title="">
