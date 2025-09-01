@@ -16,7 +16,7 @@ export function DetectorConfigForm({ type, config, onChange }: Props): JSX.Eleme
                     <div className="w-32 text-muted-alt">Window</div>
                     <LemonField name="window">
                         <Tooltip
-                            title="Past intervals used to compute baseline mean and std (default 30)."
+                            title="Number of past periods to analyze for establishing 'normal' behavior. More periods = more stable baseline but slower to adapt to trends. Recommended: 30 for daily data, 7-14 for hourly data."
                             placement="right"
                         >
                             <LemonInput
@@ -33,14 +33,17 @@ export function DetectorConfigForm({ type, config, onChange }: Props): JSX.Eleme
                 <div className="flex flex-wrap items-center gap-3">
                     <div className="w-32 text-muted-alt">Measure</div>
                     <LemonField name="on">
-                        <Tooltip title="What to evaluate: raw value or change vs previous (delta)." placement="right">
+                        <Tooltip
+                            title="What to monitor: 'Value' checks the actual metric value, 'Delta' checks the change from the previous period. Use 'Delta' to catch sudden spikes/drops, 'Value' for absolute thresholds."
+                            placement="right"
+                        >
                             <LemonSelect
                                 className="w-40"
                                 value={config.on ?? 'value'}
                                 onChange={(val) => onChange({ on: val })}
                                 options={[
-                                    { label: 'value', value: 'value' },
-                                    { label: 'delta', value: 'delta' },
+                                    { label: 'Value', value: 'value' },
+                                    { label: 'Delta', value: 'delta' },
                                 ]}
                             />
                         </Tooltip>
@@ -51,7 +54,7 @@ export function DetectorConfigForm({ type, config, onChange }: Props): JSX.Eleme
                     <div className="w-32 text-muted-alt">Z threshold</div>
                     <LemonField name="z_threshold">
                         <Tooltip
-                            title="Trigger when z-score meets or exceeds this value (default 3)."
+                            title="How many standard deviations from normal to trigger an alert. Lower = more sensitive. Typical values: 2 (frequent alerts), 3 (balanced), 4+ (rare alerts only)."
                             placement="right"
                         >
                             <LemonInput
@@ -69,7 +72,10 @@ export function DetectorConfigForm({ type, config, onChange }: Props): JSX.Eleme
                 <div className="flex flex-wrap items-center gap-3">
                     <div className="w-32 text-muted-alt">Direction</div>
                     <LemonField name="direction">
-                        <Tooltip title="Alert on spikes up, down, or both (two-tailed)." placement="right">
+                        <Tooltip
+                            title="Which direction to monitor: 'Up' for increases only, 'Down' for decreases only, 'Both' for any unusual change in either direction."
+                            placement="right"
+                        >
                             <LemonSelect
                                 className="w-40"
                                 value={config.direction ?? 'both'}
@@ -93,7 +99,10 @@ export function DetectorConfigForm({ type, config, onChange }: Props): JSX.Eleme
                 <div className="flex flex-wrap items-center gap-3">
                     <div className="w-32 text-muted-alt">Window</div>
                     <LemonField name="window">
-                        <Tooltip title="Past intervals used to compute median and MAD (default 30)." placement="right">
+                        <Tooltip
+                            title="Number of past periods to analyze for establishing 'normal' behavior. More periods = more stable baseline but slower to adapt to trends. Recommended: 30 for daily data, 7-14 for hourly data."
+                            placement="right"
+                        >
                             <LemonInput
                                 type="number"
                                 className="w-28"
@@ -108,14 +117,17 @@ export function DetectorConfigForm({ type, config, onChange }: Props): JSX.Eleme
                 <div className="flex flex-wrap items-center gap-3">
                     <div className="w-32 text-muted-alt">Measure</div>
                     <LemonField name="on">
-                        <Tooltip title="What to evaluate: raw value or change vs previous (delta)." placement="right">
+                        <Tooltip
+                            title="What to monitor: 'Value' checks the actual metric value, 'Delta' checks the change from the previous period. Use 'Delta' to catch sudden spikes/drops, 'Value' for absolute thresholds."
+                            placement="right"
+                        >
                             <LemonSelect
                                 className="w-40"
                                 value={config.on ?? 'value'}
                                 onChange={(val) => onChange({ on: val })}
                                 options={[
-                                    { label: 'value', value: 'value' },
-                                    { label: 'delta', value: 'delta' },
+                                    { label: 'Value', value: 'value' },
+                                    { label: 'Delta', value: 'delta' },
                                 ]}
                             />
                         </Tooltip>
@@ -126,7 +138,7 @@ export function DetectorConfigForm({ type, config, onChange }: Props): JSX.Eleme
                     <div className="w-32 text-muted-alt">k threshold</div>
                     <LemonField name="k">
                         <Tooltip
-                            title="Trigger when |robust score| (MAD) meets or exceeds k (default 3.5)."
+                            title="How extreme a value must be to trigger an alert. Lower = more sensitive. Typical values: 2.5 (frequent alerts), 3.5 (balanced), 5+ (rare alerts only). MAD is less sensitive to outliers than Z-score."
                             placement="right"
                         >
                             <LemonInput
@@ -144,7 +156,10 @@ export function DetectorConfigForm({ type, config, onChange }: Props): JSX.Eleme
                 <div className="flex flex-wrap items-center gap-3">
                     <div className="w-32 text-muted-alt">Direction</div>
                     <LemonField name="direction">
-                        <Tooltip title="Alert on spikes up, down, or both (two-sided)." placement="right">
+                        <Tooltip
+                            title="Which direction to monitor: 'Up' for increases only, 'Down' for decreases only, 'Both' for any unusual change in either direction."
+                            placement="right"
+                        >
                             <LemonSelect
                                 className="w-40"
                                 value={config.direction ?? 'both'}
