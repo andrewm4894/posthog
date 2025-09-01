@@ -264,16 +264,30 @@ export function EditAlertModal({
                                             <div className="font-semibold">Detector</div>
                                             <Group name={['config', 'detector_config']}>
                                                 <div className="flex flex-wrap items-center gap-3">
-                                                    <LemonField name="type">
-                                                        <LemonSelect
-                                                            className="w-48"
-                                                            placeholder="Threshold (default)"
-                                                            options={[
-                                                                { label: 'Threshold (default)', value: '' },
-                                                                { label: 'Z-score', value: 'zscore' },
-                                                            ]}
-                                                        />
-                                                    </LemonField>
+                                                    <LemonSelect
+                                                        className="w-48"
+                                                        placeholder="Threshold (default)"
+                                                        value={alertForm?.config?.detector_config?.type ?? ''}
+                                                        onChange={(val) => {
+                                                            if (val === 'zscore') {
+                                                                setAlertFormValue(['config', 'detector_config'], {
+                                                                    type: 'zscore',
+                                                                    window: 30,
+                                                                    z_threshold: 3.0,
+                                                                    on: 'value',
+                                                                    direction: 'both',
+                                                                })
+                                                            } else {
+                                                                setAlertFormValue(['config', 'detector_config'], {
+                                                                    type: '',
+                                                                })
+                                                            }
+                                                        }}
+                                                        options={[
+                                                            { label: 'Threshold (default)', value: '' },
+                                                            { label: 'Z-score', value: 'zscore' },
+                                                        ]}
+                                                    />
                                                 </div>
                                                 {alertForm?.config?.detector_config?.type === 'zscore' && (
                                                     <div className="space-y-2">
