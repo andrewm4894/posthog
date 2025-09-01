@@ -235,6 +235,83 @@ export function EditAlertModal({
                                             values breaches the threshold.
                                         </LemonBanner>
                                     )}
+                                    {detectorsEnabled && (
+                                        <div className="flex flex-col gap-2">
+                                            <div className="font-semibold">Detector</div>
+                                            <Group name={['config', 'detector_config']}>
+                                                <div className="flex flex-wrap items-center gap-3">
+                                                    <LemonField name="type">
+                                                        <LemonSelect
+                                                            className="w-48"
+                                                            placeholder="Threshold (default)"
+                                                            options={[
+                                                                { label: 'Threshold (default)', value: '' },
+                                                                { label: 'Z-score', value: 'zscore' },
+                                                            ]}
+                                                        />
+                                                    </LemonField>
+                                                </div>
+                                                {alertForm?.config?.detector_config?.type === 'zscore' && (
+                                                    <div className="space-y-2">
+                                                        <div className="flex flex-wrap items-center gap-3">
+                                                            <div className="w-32 text-muted-alt">Window</div>
+                                                            <LemonField name="window">
+                                                                <LemonInput
+                                                                    type="number"
+                                                                    className="w-28"
+                                                                    placeholder="30"
+                                                                />
+                                                            </LemonField>
+                                                        </div>
+
+                                                        <div className="flex flex-wrap items-center gap-3">
+                                                            <div className="w-32 text-muted-alt">Measure</div>
+                                                            <LemonField name="on">
+                                                                <LemonSelect
+                                                                    className="w-40"
+                                                                    options={[
+                                                                        { label: 'value', value: 'value' },
+                                                                        { label: 'delta', value: 'delta' },
+                                                                        { label: '% delta', value: 'pct_delta' },
+                                                                    ]}
+                                                                />
+                                                            </LemonField>
+                                                        </div>
+
+                                                        <div className="flex flex-wrap items-center gap-3">
+                                                            <div className="w-32 text-muted-alt">Z threshold</div>
+                                                            <LemonField name="z_threshold">
+                                                                <LemonInput
+                                                                    type="number"
+                                                                    step={0.1}
+                                                                    className="w-28"
+                                                                    placeholder="2.0"
+                                                                />
+                                                            </LemonField>
+                                                        </div>
+
+                                                        <div className="flex flex-wrap items-center gap-3">
+                                                            <div className="w-32 text-muted-alt">Two-tailed</div>
+                                                            <LemonField name="two_tailed">
+                                                                <LemonCheckbox label="Enable two-tailed test" />
+                                                            </LemonField>
+                                                        </div>
+
+                                                        <div className="flex flex-wrap items-center gap-3">
+                                                            <div className="w-32 text-muted-alt">Min points</div>
+                                                            <LemonField name="min_points">
+                                                                <LemonInput
+                                                                    type="number"
+                                                                    className="w-28"
+                                                                    placeholder="10"
+                                                                />
+                                                            </LemonField>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </Group>
+                                        </div>
+                                    )}
                                     <div className="flex gap-4 items-center">
                                         <div>When</div>
                                         <Group name={['config']}>
@@ -269,61 +346,6 @@ export function EditAlertModal({
                                                 />
                                             </LemonField>
                                         </Group>
-                                        {detectorsEnabled && (
-                                            <Group name={['config', 'detector_config']}>
-                                                <LemonField name="type">
-                                                    <LemonSelect
-                                                        fullWidth
-                                                        className="w-36"
-                                                        placeholder="Detector (optional)"
-                                                        options={[
-                                                            { label: 'Threshold (default)', value: '' },
-                                                            { label: 'Z-score', value: 'zscore' },
-                                                        ]}
-                                                    />
-                                                </LemonField>
-                                                {/* Z-score params */}
-                                                {alertForm?.config?.detector_config?.type === 'zscore' && (
-                                                    <>
-                                                        <LemonField name="window">
-                                                            <LemonInput
-                                                                type="number"
-                                                                className="w-24"
-                                                                placeholder="window"
-                                                            />
-                                                        </LemonField>
-                                                        <LemonField name="on">
-                                                            <LemonSelect
-                                                                className="w-32"
-                                                                options={[
-                                                                    { label: 'value', value: 'value' },
-                                                                    { label: 'delta', value: 'delta' },
-                                                                    { label: '% delta', value: 'pct_delta' },
-                                                                ]}
-                                                            />
-                                                        </LemonField>
-                                                        <LemonField name="z_threshold">
-                                                            <LemonInput
-                                                                type="number"
-                                                                className="w-24"
-                                                                placeholder="z>="
-                                                                step={0.1}
-                                                            />
-                                                        </LemonField>
-                                                        <LemonField name="two_tailed">
-                                                            <LemonCheckbox label="two-tailed" />
-                                                        </LemonField>
-                                                        <LemonField name="min_points">
-                                                            <LemonInput
-                                                                type="number"
-                                                                className="w-24"
-                                                                placeholder="min"
-                                                            />
-                                                        </LemonField>
-                                                    </>
-                                                )}
-                                            </Group>
-                                        )}
                                         {alertForm?.config?.detector_config?.type !== 'zscore' && (
                                             <Group name={['condition']}>
                                                 <LemonField name="type">
