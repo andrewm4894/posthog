@@ -256,57 +256,75 @@ export function EditAlertModal({
                                                         <div className="flex flex-wrap items-center gap-3">
                                                             <div className="w-32 text-muted-alt">Window</div>
                                                             <LemonField name="window">
-                                                                <LemonInput
-                                                                    type="number"
-                                                                    className="w-28"
-                                                                    placeholder="30"
-                                                                />
+                                                                <Tooltip
+                                                                    title="Past intervals used to compute baseline mean and std (default 30)."
+                                                                    placement="right"
+                                                                >
+                                                                    <LemonInput
+                                                                        type="number"
+                                                                        className="w-28"
+                                                                        placeholder="30"
+                                                                    />
+                                                                </Tooltip>
                                                             </LemonField>
                                                         </div>
 
                                                         <div className="flex flex-wrap items-center gap-3">
                                                             <div className="w-32 text-muted-alt">Measure</div>
                                                             <LemonField name="on">
-                                                                <LemonSelect
-                                                                    className="w-40"
-                                                                    options={[
-                                                                        { label: 'value', value: 'value' },
-                                                                        { label: 'delta', value: 'delta' },
-                                                                        { label: '% delta', value: 'pct_delta' },
-                                                                    ]}
-                                                                />
+                                                                <Tooltip
+                                                                    title="What to evaluate: raw value, change vs previous, or percent change."
+                                                                    placement="right"
+                                                                >
+                                                                    <LemonSelect
+                                                                        className="w-40"
+                                                                        options={[
+                                                                            { label: 'value', value: 'value' },
+                                                                            { label: 'delta', value: 'delta' },
+                                                                            { label: '% delta', value: 'pct_delta' },
+                                                                        ]}
+                                                                    />
+                                                                </Tooltip>
                                                             </LemonField>
                                                         </div>
 
                                                         <div className="flex flex-wrap items-center gap-3">
                                                             <div className="w-32 text-muted-alt">Z threshold</div>
                                                             <LemonField name="z_threshold">
-                                                                <LemonInput
-                                                                    type="number"
-                                                                    step={0.1}
-                                                                    className="w-28"
-                                                                    placeholder="2.0"
-                                                                />
+                                                                <Tooltip
+                                                                    title="Trigger when z-score meets or exceeds this value (default 3)."
+                                                                    placement="right"
+                                                                >
+                                                                    <LemonInput
+                                                                        type="number"
+                                                                        step={0.1}
+                                                                        className="w-28"
+                                                                        placeholder="3.0"
+                                                                    />
+                                                                </Tooltip>
                                                             </LemonField>
                                                         </div>
 
                                                         <div className="flex flex-wrap items-center gap-3">
-                                                            <div className="w-32 text-muted-alt">Two-tailed</div>
-                                                            <LemonField name="two_tailed">
-                                                                <LemonCheckbox label="Enable two-tailed test" />
+                                                            <div className="w-32 text-muted-alt">Direction</div>
+                                                            <LemonField name="direction">
+                                                                <Tooltip
+                                                                    title="Alert on spikes up, down, or both (two-tailed)."
+                                                                    placement="right"
+                                                                >
+                                                                    <LemonSelect
+                                                                        className="w-40"
+                                                                        options={[
+                                                                            { label: 'Both', value: 'both' },
+                                                                            { label: 'Up', value: 'up' },
+                                                                            { label: 'Down', value: 'down' },
+                                                                        ]}
+                                                                    />
+                                                                </Tooltip>
                                                             </LemonField>
                                                         </div>
 
-                                                        <div className="flex flex-wrap items-center gap-3">
-                                                            <div className="w-32 text-muted-alt">Min points</div>
-                                                            <LemonField name="min_points">
-                                                                <LemonInput
-                                                                    type="number"
-                                                                    className="w-28"
-                                                                    placeholder="10"
-                                                                />
-                                                            </LemonField>
-                                                        </div>
+                                                        {/* min_points fixed (10) and not exposed */}
                                                     </div>
                                                 )}
                                             </Group>

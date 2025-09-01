@@ -15,6 +15,7 @@ class ZScoreConfig(DetectorConfig):
     on: str = "value"  # value|delta|pct_delta
     z_threshold: float = 3.0
     two_tailed: bool = True
+    direction: str = "both"  # up|down|both (both == two-tailed)
     min_points: int = 10
 
 
@@ -53,12 +54,16 @@ class ZScoreDetectorImpl:
 
         breaches: list[str] = []
         thr = abs(config.z_threshold)
-        if config.two_tailed:
+        direction = (config.direction or "both").lower()
+        if direction == "both" or config.two_tailed:
             if abs(z) >= thr:
                 breaches.append(f"|z|={abs(z):.2f} >= {thr}")
-        else:
+        elif direction == "up":
             if z >= thr:
                 breaches.append(f"z={z:.2f} >= {thr}")
+        elif direction == "down":
+            if z <= -thr:
+                breaches.append(f"z={z:.2f} <= -{thr}")
 
         return AlertEvaluationResult(value=float(z), breaches=breaches)
 
