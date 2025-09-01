@@ -15,6 +15,10 @@ from posthog.api.services.query import ExecutionMode
 from posthog.caching.calculate_results import calculate_for_query_based_insight
 from posthog.caching.fetch_from_cache import InsightResult
 from posthog.models import AlertConfiguration, Insight
+from posthog.models.instance_setting import get_instance_setting
+from posthog.tasks.alerts.detectors.base import DetectorContext, get_detector
+from posthog.tasks.alerts.detectors.threshold import ThresholdBounds, ThresholdConfig
+from posthog.tasks.alerts.detectors.zscore import ZScoreConfig
 from posthog.tasks.alerts.utils import NON_TIME_SERIES_DISPLAY_TYPES, AlertEvaluationResult
 
 
@@ -66,6 +70,54 @@ def check_trends_alert(alert: AlertConfiguration, insight: Insight, query: Trend
     )
     is_non_time_series = _is_non_time_series_trend(query)
     check_current_interval = config.check_ongoing_interval
+
+    # Detector path (feature-flagged)
+    detectors_enabled = bool(get_instance_setting("ALERTS_DETECTORS_ENABLED"))
+    detector_cfg = (alert.config or {}).get("detector_config") if isinstance(alert.config, dict) else None
+
+    if detectors_enabled and detector_cfg:
+        # Build window to include necessary history; default to 30 if not provided
+        window = int(detector_cfg.get("window", 30))
+        last_x = max(2, window + 1)
+        filters_override = _date_range_override_for_intervals(query, last_x_intervals=last_x)
+        calculation_result = calculate_for_query_based_insight(
+            insight,
+            team=alert.team,
+            execution_mode=ExecutionMode.RECENT_CACHE_CALCULATE_BLOCKING_IF_STALE,
+            user=None,
+            filters_override=filters_override,
+        )
+
+        results = cast(list[TrendResult], calculation_result.result)
+        if not results:
+            return AlertEvaluationResult(value=None, breaches=[])
+        selected = _pick_series_result(
+            cast(TrendsAlertConfig, TrendsAlertConfig.model_validate(alert.config)), calculation_result
+        )
+        series = selected["data"]
+        ctx = DetectorContext(series=series, label=selected.get("label"))
+        dtype = str(detector_cfg.get("type", "threshold")).lower()
+        if dtype == "zscore":
+            cfg = ZScoreConfig(
+                window=int(detector_cfg.get("window", 30)),
+                on=str(detector_cfg.get("on", "value")),
+                z_threshold=float(detector_cfg.get("z_threshold", 3.0)),
+                two_tailed=bool(detector_cfg.get("two_tailed", True)),
+                min_points=int(detector_cfg.get("min_points", 10)),
+            )
+            return get_detector("zscore").evaluate(ctx, cfg)
+        else:
+            # default threshold detector
+            bounds = detector_cfg.get("bounds", {})
+            cfg = ThresholdConfig(
+                on=str(detector_cfg.get("on", "value")),
+                bounds=ThresholdBounds(
+                    lower=bounds.get("lower"),
+                    upper=bounds.get("upper"),
+                ),
+                two_tailed=bool(detector_cfg.get("two_tailed", True)),
+            )
+            return get_detector("threshold").evaluate(ctx, cfg)
 
     match condition.type:
         case AlertConditionType.ABSOLUTE_VALUE:
