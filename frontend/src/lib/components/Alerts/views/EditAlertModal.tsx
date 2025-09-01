@@ -311,7 +311,7 @@ export function EditAlertModal({
                                                             <div className="w-32 text-muted-alt">Measure</div>
                                                             <LemonField name="on">
                                                                 <Tooltip
-                                                                    title="What to evaluate: raw value, change vs previous, or percent change."
+                                                                    title="What to evaluate: raw value or change vs previous (delta)."
                                                                     placement="right"
                                                                 >
                                                                     <LemonSelect
@@ -329,7 +329,6 @@ export function EditAlertModal({
                                                                         options={[
                                                                             { label: 'value', value: 'value' },
                                                                             { label: 'delta', value: 'delta' },
-                                                                            { label: '% delta', value: 'pct_delta' },
                                                                         ]}
                                                                     />
                                                                 </Tooltip>

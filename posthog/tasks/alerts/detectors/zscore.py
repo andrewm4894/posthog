@@ -12,7 +12,7 @@ from .base import DetectorConfig, DetectorContext, register_detector
 class ZScoreConfig(DetectorConfig):
     type: str = "zscore"
     window: int = 30
-    on: str = "value"  # value|delta|pct_delta
+    on: str = "value"  # value|delta
     z_threshold: float = 3.0
     two_tailed: bool = True
     direction: str = "both"  # up|down|both (both == two-tailed)
@@ -30,12 +30,6 @@ class ZScoreDetectorImpl:
                 return seq
             if config.on == "delta":
                 return [b - a for a, b in zip(seq[:-1], seq[1:])]
-            if config.on == "pct_delta":
-                out = []
-                for a, b in zip(seq[:-1], seq[1:]):
-                    denom = a if abs(a) > 1e-12 else 1e-12
-                    out.append((b - a) / denom)
-                return out
             return seq
 
         x = transform(series)
