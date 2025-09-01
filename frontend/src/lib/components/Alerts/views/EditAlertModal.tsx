@@ -284,7 +284,7 @@ export function EditAlertModal({
                                                             }
                                                         }}
                                                         options={[
-                                                            { label: 'Threshold (default)', value: '' },
+                                                            { label: 'Threshold', value: '' },
                                                             { label: 'Z-score', value: 'zscore' },
                                                         ]}
                                                     />
@@ -316,6 +316,16 @@ export function EditAlertModal({
                                                                 >
                                                                     <LemonSelect
                                                                         className="w-40"
+                                                                        value={
+                                                                            alertForm?.config?.detector_config?.on ??
+                                                                            'value'
+                                                                        }
+                                                                        onChange={(val) =>
+                                                                            setAlertFormValue(
+                                                                                ['config', 'detector_config', 'on'],
+                                                                                val
+                                                                            )
+                                                                        }
                                                                         options={[
                                                                             { label: 'value', value: 'value' },
                                                                             { label: 'delta', value: 'delta' },
@@ -352,6 +362,20 @@ export function EditAlertModal({
                                                                 >
                                                                     <LemonSelect
                                                                         className="w-40"
+                                                                        value={
+                                                                            alertForm?.config?.detector_config
+                                                                                ?.direction ?? 'both'
+                                                                        }
+                                                                        onChange={(val) =>
+                                                                            setAlertFormValue(
+                                                                                [
+                                                                                    'config',
+                                                                                    'detector_config',
+                                                                                    'direction',
+                                                                                ],
+                                                                                val
+                                                                            )
+                                                                        }
                                                                         options={[
                                                                             { label: 'Both', value: 'both' },
                                                                             { label: 'Up', value: 'up' },
