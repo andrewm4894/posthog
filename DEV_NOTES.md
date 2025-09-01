@@ -113,4 +113,43 @@ SQL
 docker exec -t posthog-clickhouse-1 clickhouse-client -q "SELECT count() FROM default.person; SELECT count() FROM default.person_distinct_id; SELECT count() FROM default.person_distinct_id2;"
 ```
 
+Alert emails via Maildev (local SMTP)
+- Maildev runs in dev: SMTP `127.0.0.1:1025`, UI `http://localhost:1080`.
+- Two ways to enable emails locally:
+  - Env vars in `.env` (loaded by bin/start):
+    ```
+    EMAIL_HOST=127.0.0.1
+    EMAIL_PORT=1025
+    EMAIL_ENABLED=true
+    EMAIL_USE_TLS=false
+    EMAIL_USE_SSL=false
+    EMAIL_HOST_USER=
+    EMAIL_HOST_PASSWORD=
+    ```
+  - Or dynamic instance settings (no restart needed):
+    ```bash
+    flox activate -- bash -lc "python manage.py shell -c \"from posthog.models.instance_setting import set_instance_setting as s; s('EMAIL_HOST','127.0.0.1'); s('EMAIL_PORT',1025); s('EMAIL_ENABLED', True); s('EMAIL_USE_TLS', False); s('EMAIL_USE_SSL', False); s('EMAIL_HOST_USER',''); s('EMAIL_HOST_PASSWORD',''); print('email on')\""
+    ```
+
+Quick alert test
+```bash
+# subscribe your user to an alert
+flox activate -- bash -lc "python manage.py shell -c \"from posthog.models import AlertConfiguration, User; a=AlertConfiguration.objects.get(id='REPLACE_ALERT_ID'); u=User.objects.get(email='test@posthog.com'); a.subscribed_users.add(u); a.save(); print('subscribed')\""
+
+# (optional) evaluate ongoing interval (today)
+flox activate -- bash -lc "python manage.py shell -c \"from posthog.models import AlertConfiguration; a=AlertConfiguration.objects.get(id='REPLACE_ALERT_ID'); cfg=a.config or {}; cfg['check_ongoing_interval']=True; a.config=cfg; a.next_check_at=None; a.save(); print('cfg set')\""
+
+# seed events to breach threshold (example: team 18)
+bin/seed-events -t 18 -n 800 --today
+
+# force-run the check
+flox activate -- bash -lc "python manage.py shell -c \"from posthog.tasks.alerts.checks import check_alert; check_alert('REPLACE_ALERT_ID'); print('done')\""
+
+# inspect last checks (should show FIRING and targets_notified)
+flox activate -- bash -lc "python manage.py shell -c \"from posthog.models.alert import AlertCheck, AlertConfiguration; a=AlertConfiguration.objects.get(id='REPLACE_ALERT_ID'); c=AlertCheck.objects.filter(alert_configuration=a).order_by('-created_at').first(); print(c.state, c.calculated_value, c.targets_notified)\""
+
+# open Maildev UI
+# http://localhost:1080
+```
+
 
