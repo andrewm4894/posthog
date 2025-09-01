@@ -12,8 +12,9 @@ from .base import DetectorConfig, DetectorContext, register_detector
 class MADConfig(DetectorConfig):
     type: str = "mad"
     window: int = 30
-    on: str = "value"  # value|delta|pct_delta
+    on: str = "value"  # value|delta
     k: float = 3.5
+    direction: str = "both"  # up|down|both
     min_points: int = 10
 
 
@@ -28,12 +29,6 @@ class MADDetectorImpl:
                 return seq
             if config.on == "delta":
                 return [b - a for a, b in zip(seq[:-1], seq[1:])]
-            if config.on == "pct_delta":
-                out = []
-                for a, b in zip(seq[:-1], seq[1:]):
-                    denom = a if abs(a) > 1e-12 else 1e-12
-                    out.append((b - a) / denom)
-                return out
             return seq
 
         x = transform(series)
@@ -48,8 +43,17 @@ class MADDetectorImpl:
         robust = 0.6745 * (current - m) / (mad + 1e-12)
 
         breaches: list[str] = []
-        if abs(robust) >= abs(config.k):
-            breaches.append(f"|mad_score|={abs(robust):.2f} >= {abs(config.k)}")
+        thr = abs(config.k)
+        direction = (config.direction or "both").lower()
+        if direction == "both":
+            if abs(robust) >= thr:
+                breaches.append(f"|mad_score|={abs(robust):.2f} >= {thr}")
+        elif direction == "up":
+            if robust >= thr:
+                breaches.append(f"mad_score={robust:.2f} >= {thr}")
+        elif direction == "down":
+            if robust <= -thr:
+                breaches.append(f"mad_score={robust:.2f} <= -{thr}")
 
         return AlertEvaluationResult(value=float(robust), breaches=breaches)
 

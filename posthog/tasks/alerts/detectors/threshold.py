@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional
 
 from posthog.tasks.alerts.utils import AlertEvaluationResult
@@ -18,7 +18,7 @@ class ThresholdBounds:
 class ThresholdConfig(DetectorConfig):
     type: str = "threshold"
     on: str = "value"  # value|delta|pct_delta
-    bounds: ThresholdBounds = ThresholdBounds()
+    bounds: ThresholdBounds = field(default_factory=ThresholdBounds)
     two_tailed: bool = True  # kept for symmetry
 
 

@@ -29,7 +29,7 @@ EOF
 
 TEAM_ID=""
 API_KEY=""
-EVENT="$pageview"
+EVENT="\$pageview"
 COUNT=500
 PREFIX="seed"
 INTERVAL_MS=0

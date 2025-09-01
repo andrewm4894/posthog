@@ -112,7 +112,10 @@ export const alertFormLogic = kea<alertFormLogicType>([
             }),
             submit: async (alert) => {
                 // sanitize detector_config to keep it minimal (store only non-defaults)
-                const defaults = { zscore: { window: 30, z_threshold: 3.0, on: 'value', direction: 'both' } } as const
+                const defaults = {
+                    zscore: { window: 30, z_threshold: 3.0, on: 'value', direction: 'both' },
+                    mad: { window: 30, k: 3.5, on: 'value', direction: 'both' },
+                } as const
                 const detectorRaw = alert.config?.detector_config
                 let detectorSanitized = detectorRaw
                 if (detectorRaw?.type === 'zscore') {
@@ -128,6 +131,23 @@ export const alertFormLogic = kea<alertFormLogicType>([
                         out.on = d.on
                     }
                     if ((d.direction || 'both') !== defaults.zscore.direction) {
+                        out.direction = d.direction
+                    }
+                    detectorSanitized = out
+                }
+                if (detectorRaw?.type === 'mad') {
+                    const d = detectorRaw as Record<string, any>
+                    const out: Record<string, any> = { type: 'mad' }
+                    if (d.window != null && Number(d.window) !== defaults.mad.window) {
+                        out.window = Number(d.window)
+                    }
+                    if (d.k != null && Number(d.k) !== defaults.mad.k) {
+                        out.k = Number(d.k)
+                    }
+                    if ((d.on || 'value') !== defaults.mad.on) {
+                        out.on = d.on
+                    }
+                    if ((d.direction || 'both') !== defaults.mad.direction) {
                         out.direction = d.direction
                     }
                     detectorSanitized = out

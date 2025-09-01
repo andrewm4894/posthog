@@ -55,7 +55,9 @@ def check_trends_alert(alert: AlertConfiguration, insight: Insight, query: Trend
     """
 
     if "type" in alert.config and alert.config["type"] == "TrendsAlertConfig":
-        config = TrendsAlertConfig.model_validate(alert.config)
+        _cfg = dict(alert.config)
+        _cfg.pop("detector_config", None)
+        config = TrendsAlertConfig.model_validate(_cfg)
     else:
         ValueError(f"Unsupported alert config type: {alert.config}")
 
@@ -91,8 +93,10 @@ def check_trends_alert(alert: AlertConfiguration, insight: Insight, query: Trend
         results = cast(list[TrendResult], calculation_result.result)
         if not results:
             return AlertEvaluationResult(value=None, breaches=[])
+        _cfg2 = dict(alert.config)
+        _cfg2.pop("detector_config", None)
         selected = _pick_series_result(
-            cast(TrendsAlertConfig, TrendsAlertConfig.model_validate(alert.config)), calculation_result
+            cast(TrendsAlertConfig, TrendsAlertConfig.model_validate(_cfg2)), calculation_result
         )
         series = selected["data"]
         ctx = DetectorContext(series=series, label=selected.get("label"))

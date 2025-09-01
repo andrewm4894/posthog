@@ -40,6 +40,8 @@ import { InsightLogicProps, InsightShortId, QueryBasedInsightModel } from '~/typ
 import { SnoozeButton } from '../SnoozeButton'
 import { alertFormLogic, canCheckOngoingInterval } from '../alertFormLogic'
 import { alertLogic } from '../alertLogic'
+import { DetectorConfigForm } from '../detectors/DetectorConfigForm'
+import { DetectorPicker } from '../detectors/DetectorPicker'
 import { AlertType } from '../types'
 import { AlertDestinationSelector } from './AlertDestinationSelector'
 
@@ -263,131 +265,38 @@ export function EditAlertModal({
                                         <div className="flex flex-col gap-2">
                                             <div className="font-semibold">Detector</div>
                                             <Group name={['config', 'detector_config']}>
-                                                <div className="flex flex-wrap items-center gap-3">
-                                                    <LemonSelect
-                                                        className="w-48"
-                                                        placeholder="Threshold (default)"
-                                                        value={alertForm?.config?.detector_config?.type ?? ''}
-                                                        onChange={(val) => {
-                                                            if (val === 'zscore') {
-                                                                setAlertFormValue(['config', 'detector_config'], {
-                                                                    type: 'zscore',
-                                                                    window: 30,
-                                                                    z_threshold: 3.0,
-                                                                    on: 'value',
-                                                                    direction: 'both',
-                                                                })
-                                                            } else {
-                                                                setAlertFormValue(['config', 'detector_config'], {
-                                                                    type: '',
-                                                                })
-                                                            }
-                                                        }}
-                                                        options={[
-                                                            { label: 'Threshold', value: '' },
-                                                            { label: 'Z-score', value: 'zscore' },
-                                                        ]}
-                                                    />
-                                                </div>
-                                                {alertForm?.config?.detector_config?.type === 'zscore' && (
-                                                    <div className="space-y-2">
-                                                        <div className="flex flex-wrap items-center gap-3">
-                                                            <div className="w-32 text-muted-alt">Window</div>
-                                                            <LemonField name="window">
-                                                                <Tooltip
-                                                                    title="Past intervals used to compute baseline mean and std (default 30)."
-                                                                    placement="right"
-                                                                >
-                                                                    <LemonInput
-                                                                        type="number"
-                                                                        className="w-28"
-                                                                        placeholder="30"
-                                                                    />
-                                                                </Tooltip>
-                                                            </LemonField>
-                                                        </div>
-
-                                                        <div className="flex flex-wrap items-center gap-3">
-                                                            <div className="w-32 text-muted-alt">Measure</div>
-                                                            <LemonField name="on">
-                                                                <Tooltip
-                                                                    title="What to evaluate: raw value or change vs previous (delta)."
-                                                                    placement="right"
-                                                                >
-                                                                    <LemonSelect
-                                                                        className="w-40"
-                                                                        value={
-                                                                            alertForm?.config?.detector_config?.on ??
-                                                                            'value'
-                                                                        }
-                                                                        onChange={(val) =>
-                                                                            setAlertFormValue(
-                                                                                ['config', 'detector_config', 'on'],
-                                                                                val
-                                                                            )
-                                                                        }
-                                                                        options={[
-                                                                            { label: 'value', value: 'value' },
-                                                                            { label: 'delta', value: 'delta' },
-                                                                        ]}
-                                                                    />
-                                                                </Tooltip>
-                                                            </LemonField>
-                                                        </div>
-
-                                                        <div className="flex flex-wrap items-center gap-3">
-                                                            <div className="w-32 text-muted-alt">Z threshold</div>
-                                                            <LemonField name="z_threshold">
-                                                                <Tooltip
-                                                                    title="Trigger when z-score meets or exceeds this value (default 3)."
-                                                                    placement="right"
-                                                                >
-                                                                    <LemonInput
-                                                                        type="number"
-                                                                        step={0.1}
-                                                                        className="w-28"
-                                                                        placeholder="3.0"
-                                                                    />
-                                                                </Tooltip>
-                                                            </LemonField>
-                                                        </div>
-
-                                                        <div className="flex flex-wrap items-center gap-3">
-                                                            <div className="w-32 text-muted-alt">Direction</div>
-                                                            <LemonField name="direction">
-                                                                <Tooltip
-                                                                    title="Alert on spikes up, down, or both (two-tailed)."
-                                                                    placement="right"
-                                                                >
-                                                                    <LemonSelect
-                                                                        className="w-40"
-                                                                        value={
-                                                                            alertForm?.config?.detector_config
-                                                                                ?.direction ?? 'both'
-                                                                        }
-                                                                        onChange={(val) =>
-                                                                            setAlertFormValue(
-                                                                                [
-                                                                                    'config',
-                                                                                    'detector_config',
-                                                                                    'direction',
-                                                                                ],
-                                                                                val
-                                                                            )
-                                                                        }
-                                                                        options={[
-                                                                            { label: 'Both', value: 'both' },
-                                                                            { label: 'Up', value: 'up' },
-                                                                            { label: 'Down', value: 'down' },
-                                                                        ]}
-                                                                    />
-                                                                </Tooltip>
-                                                            </LemonField>
-                                                        </div>
-
-                                                        {/* min_points fixed (10) and not exposed */}
-                                                    </div>
-                                                )}
+                                                <DetectorPicker
+                                                    value={alertForm?.config?.detector_config?.type ?? ''}
+                                                    onChange={(type) => {
+                                                        setAlertFormValue(['config', 'detector_config'], {
+                                                            type,
+                                                            ...(type === 'zscore' && {
+                                                                window: 30,
+                                                                z_threshold: 3.0,
+                                                                on: 'value',
+                                                                direction: 'both',
+                                                            }),
+                                                            ...(type === 'mad' && {
+                                                                window: 30,
+                                                                k: 3.5,
+                                                                on: 'value',
+                                                                direction: 'both',
+                                                            }),
+                                                        })
+                                                    }}
+                                                />
+                                                <DetectorConfigForm
+                                                    type={alertForm?.config?.detector_config?.type}
+                                                    config={alertForm?.config?.detector_config}
+                                                    onChange={(patch) => {
+                                                        Object.entries(patch).forEach(([field, value]) =>
+                                                            setAlertFormValue(
+                                                                ['config', 'detector_config', field],
+                                                                value
+                                                            )
+                                                        )
+                                                    }}
+                                                />
                                             </Group>
                                         </div>
                                     )}
@@ -425,7 +334,7 @@ export function EditAlertModal({
                                                 />
                                             </LemonField>
                                         </Group>
-                                        {alertForm?.config?.detector_config?.type !== 'zscore' && (
+                                        {!alertForm?.config?.detector_config?.type && (
                                             <Group name={['condition']}>
                                                 <LemonField name="type">
                                                     <LemonSelect
@@ -457,7 +366,7 @@ export function EditAlertModal({
                                             </Group>
                                         )}
                                     </div>
-                                    {alertForm?.config?.detector_config?.type !== 'zscore' && (
+                                    {!alertForm?.config?.detector_config?.type && (
                                         <div className="flex gap-4 items-center">
                                             <div>less than</div>
                                             <LemonField name="lower">
