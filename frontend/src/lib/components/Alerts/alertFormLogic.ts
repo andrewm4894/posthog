@@ -124,6 +124,8 @@ export const alertFormLogic = kea<alertFormLogicType>([
                     config: {
                         ...alert.config,
                         check_ongoing_interval: canCheckOngoingInterval(alert) && alert.config.check_ongoing_interval,
+                        // pass-through detector config if present
+                        detector_config: alert.config?.detector_config,
                     },
                 }
 

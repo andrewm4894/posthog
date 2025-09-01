@@ -1,6 +1,7 @@
 import { useActions, useValues } from 'kea'
 import { Form, Group } from 'kea-forms'
 import { useCallback } from 'react'
+import { useEffect, useState } from 'react'
 
 import { IconInfo } from '@posthog/icons'
 import {
@@ -14,6 +15,7 @@ import {
     Tooltip,
 } from '@posthog/lemon-ui'
 
+import api from 'lib/api'
 import { AlertStateIndicator } from 'lib/components/Alerts/views/ManageAlertsModal'
 import { MemberSelectMultiple } from 'lib/components/MemberSelectMultiple'
 import { TZLabel } from 'lib/components/TZLabel'
@@ -151,6 +153,17 @@ export function EditAlertModal({
     // can only check ongoing interval for absolute value/increase alerts with upper threshold
     const can_check_ongoing_interval = canCheckOngoingInterval(alertForm)
 
+    // Instance setting gate for detectors
+    const [detectorsEnabled, setDetectorsEnabled] = useState<boolean>(false)
+    useEffect(() => {
+        void (async () => {
+            try {
+                const settings = (await api.get('api/instance_settings')).results ?? []
+                setDetectorsEnabled(!!settings.find((s: any) => s.key === 'ALERTS_DETECTORS_ENABLED' && s.value))
+            } catch {}
+        })()
+    }, [])
+
     return (
         <LemonModal onClose={onClose} isOpen={isOpen} width={600} simple title="">
             {alertLoading ? (
@@ -239,6 +252,61 @@ export function EditAlertModal({
                                                 />
                                             </LemonField>
                                         </Group>
+                                        {detectorsEnabled && (
+                                            <Group name={['config', 'detector_config']}>
+                                                <LemonField name="type">
+                                                    <LemonSelect
+                                                        fullWidth
+                                                        className="w-36"
+                                                        placeholder="Detector (optional)"
+                                                        options={[
+                                                            { label: 'Threshold (default)', value: '' },
+                                                            { label: 'Z-score', value: 'zscore' },
+                                                        ]}
+                                                    />
+                                                </LemonField>
+                                                {/* Z-score params */}
+                                                {alertForm?.config?.detector_config?.type === 'zscore' && (
+                                                    <>
+                                                        <LemonField name="window">
+                                                            <LemonInput
+                                                                type="number"
+                                                                className="w-24"
+                                                                placeholder="window"
+                                                            />
+                                                        </LemonField>
+                                                        <LemonField name="on">
+                                                            <LemonSelect
+                                                                className="w-32"
+                                                                options={[
+                                                                    { label: 'value', value: 'value' },
+                                                                    { label: 'delta', value: 'delta' },
+                                                                    { label: '% delta', value: 'pct_delta' },
+                                                                ]}
+                                                            />
+                                                        </LemonField>
+                                                        <LemonField name="z_threshold">
+                                                            <LemonInput
+                                                                type="number"
+                                                                className="w-24"
+                                                                placeholder="z>="
+                                                                step={0.1}
+                                                            />
+                                                        </LemonField>
+                                                        <LemonField name="two_tailed">
+                                                            <LemonCheckbox label="two-tailed" />
+                                                        </LemonField>
+                                                        <LemonField name="min_points">
+                                                            <LemonInput
+                                                                type="number"
+                                                                className="w-24"
+                                                                placeholder="min"
+                                                            />
+                                                        </LemonField>
+                                                    </>
+                                                )}
+                                            </Group>
+                                        )}
                                         <Group name={['condition']}>
                                             <LemonField name="type">
                                                 <LemonSelect

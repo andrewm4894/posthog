@@ -7,7 +7,10 @@ import {
 } from '~/queries/schema/schema-general'
 import { QueryBasedInsightModel, UserBasicType } from '~/types'
 
-export type AlertConfig = TrendsAlertConfig
+// Extend with optional detector configuration used by Alerts v2 (z-score, MAD, etc.)
+export type AlertConfig = TrendsAlertConfig & {
+    detector_config?: Record<string, any>
+}
 
 export interface AlertTypeBase {
     name: string
