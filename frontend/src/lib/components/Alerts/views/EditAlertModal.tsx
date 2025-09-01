@@ -25,7 +25,7 @@ import { LemonButton } from 'lib/lemon-ui/LemonButton'
 import { LemonField } from 'lib/lemon-ui/LemonField'
 import { LemonModal } from 'lib/lemon-ui/LemonModal'
 import { IconChevronLeft } from 'lib/lemon-ui/icons'
-import { alphabet, formatDate } from 'lib/utils'
+import { formatDate } from 'lib/utils'
 import { insightVizDataLogic } from 'scenes/insights/insightVizDataLogic'
 import { trendsDataLogic } from 'scenes/trends/trendsDataLogic'
 
@@ -147,6 +147,7 @@ export function EditAlertModal({
     const vizLogic = insightVizDataLogic({ dashboardItemId: insightShortId })
     const {
         alertSeries,
+        alertBreakdownValues,
         isNonTimeSeriesDisplay,
         isBreakdownValid,
         formulaNodes,
@@ -158,6 +159,9 @@ export function EditAlertModal({
     const creatingNewAlert = alertForm.id === undefined
     // can only check ongoing interval for absolute value/increase alerts with upper threshold
     const can_check_ongoing_interval = canCheckOngoingInterval(alertForm)
+
+    // Alphabet for labeling series (A, B, C, etc.)
+    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
 
     // Instance setting gate for detectors
     const [detectorsEnabled, setDetectorsEnabled] = useState<boolean>(false)
@@ -182,6 +186,15 @@ export function EditAlertModal({
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [alertForm?.config?.detector_config?.type])
+
+    // Auto-switch to threshold detector if switching to non-time series insight with zscore/MAD
+    useEffect(() => {
+        const detectorType = alertForm?.config?.detector_config?.type
+        if (isNonTimeSeriesDisplay && (detectorType === 'zscore' || detectorType === 'mad')) {
+            setAlertFormValue(['config', 'detector_config'], {})
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isNonTimeSeriesDisplay])
 
     // Ensure z-score defaults populate the form so selects aren't empty
     useEffect(() => {
@@ -267,6 +280,7 @@ export function EditAlertModal({
                                             <Group name={['config', 'detector_config']}>
                                                 <DetectorPicker
                                                     value={alertForm?.config?.detector_config?.type ?? ''}
+                                                    isTimeSeries={!isNonTimeSeriesDisplay}
                                                     onChange={(type) => {
                                                         setAlertFormValue(['config', 'detector_config'], {
                                                             type,
@@ -288,7 +302,42 @@ export function EditAlertModal({
                                                 <DetectorConfigForm
                                                     type={alertForm?.config?.detector_config?.type}
                                                     config={alertForm?.config?.detector_config}
-                                                    onChange={(patch) => {
+                                                    seriesIndex={alertForm?.config?.series_index}
+                                                    onSeriesChange={(index) =>
+                                                        setAlertFormValue(['config', 'series_index'], index)
+                                                    }
+                                                    seriesOptions={
+                                                        formulaNodes?.length > 0
+                                                            ? formulaNodes.map(({ formula, custom_name }, index) => ({
+                                                                  label: `${
+                                                                      custom_name ? custom_name : 'Formula'
+                                                                  } (${formula})`,
+                                                                  value: index,
+                                                              }))
+                                                            : isBreakdownValid
+                                                              ? [
+                                                                    { label: 'any breakdown value', value: 'any' },
+                                                                    {
+                                                                        label: 'average of all breakdowns',
+                                                                        value: 'average',
+                                                                    },
+                                                                    ...(alertBreakdownValues || []).map(
+                                                                        ({ label, value, seriesIndex }: any) => ({
+                                                                            label: `${label} (${value})`,
+                                                                            value: seriesIndex,
+                                                                        })
+                                                                    ),
+                                                                ]
+                                                              : alertSeries?.map(
+                                                                    ({ custom_name, name, event }, index) => ({
+                                                                        label: `${alphabet[index]} - ${
+                                                                            custom_name ?? name ?? event
+                                                                        }`,
+                                                                        value: index,
+                                                                    })
+                                                                )
+                                                    }
+                                                    onChange={(patch: Record<string, any>) => {
                                                         Object.entries(patch).forEach(([field, value]) =>
                                                             setAlertFormValue(
                                                                 ['config', 'detector_config', field],
@@ -300,41 +349,43 @@ export function EditAlertModal({
                                             </Group>
                                         </div>
                                     )}
-                                    <div className="flex gap-4 items-center">
-                                        <div>When</div>
-                                        <Group name={['config']}>
-                                            <LemonField name="series_index" className="flex-auto">
-                                                <LemonSelect
-                                                    fullWidth
-                                                    data-attr="alertForm-series-index"
-                                                    options={
-                                                        formulaNodes?.length > 0
-                                                            ? formulaNodes.map(({ formula, custom_name }, index) => ({
-                                                                  label: `${
-                                                                      custom_name ? custom_name : 'Formula'
-                                                                  } (${formula})`,
-                                                                  value: index,
-                                                              }))
-                                                            : alertSeries?.map(
-                                                                  ({ custom_name, name, event }, index) => ({
-                                                                      label: isBreakdownValid
-                                                                          ? 'any breakdown value'
-                                                                          : `${alphabet[index]} - ${
-                                                                                custom_name ?? name ?? event
-                                                                            }`,
-                                                                      value: isBreakdownValid ? 0 : index,
-                                                                  })
-                                                              )
-                                                    }
-                                                    disabledReason={
-                                                        isBreakdownValid &&
-                                                        `For trends with breakdown, the alert will fire if any of the breakdown
-                                            values breaches the threshold.`
-                                                    }
-                                                />
-                                            </LemonField>
-                                        </Group>
-                                        {!alertForm?.config?.detector_config?.type && (
+                                    {!alertForm?.config?.detector_config?.type && (
+                                        <div className="flex gap-4 items-center">
+                                            <div>When</div>
+                                            <Group name={['config']}>
+                                                <LemonField name="series_index" className="flex-auto">
+                                                    <LemonSelect
+                                                        fullWidth
+                                                        data-attr="alertForm-series-index"
+                                                        options={
+                                                            formulaNodes?.length > 0
+                                                                ? formulaNodes.map(
+                                                                      ({ formula, custom_name }, index) => ({
+                                                                          label: `${
+                                                                              custom_name ? custom_name : 'Formula'
+                                                                          } (${formula})`,
+                                                                          value: index,
+                                                                      })
+                                                                  )
+                                                                : alertSeries?.map(
+                                                                      ({ custom_name, name, event }, index) => ({
+                                                                          label: isBreakdownValid
+                                                                              ? 'any breakdown value'
+                                                                              : `${alphabet[index]} - ${
+                                                                                    custom_name ?? name ?? event
+                                                                                }`,
+                                                                          value: isBreakdownValid ? 0 : index,
+                                                                      })
+                                                                  )
+                                                        }
+                                                        disabledReason={
+                                                            isBreakdownValid &&
+                                                            `For trends with breakdown, the alert will fire if any of the breakdown
+                                                values breaches the threshold.`
+                                                        }
+                                                    />
+                                                </LemonField>
+                                            </Group>
                                             <Group name={['condition']}>
                                                 <LemonField name="type">
                                                     <LemonSelect
@@ -364,8 +415,8 @@ export function EditAlertModal({
                                                     />
                                                 </LemonField>
                                             </Group>
-                                        )}
-                                    </div>
+                                        </div>
+                                    )}
                                     {!alertForm?.config?.detector_config?.type && (
                                         <div className="flex gap-4 items-center">
                                             <div>less than</div>

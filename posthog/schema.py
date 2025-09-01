@@ -4906,7 +4906,7 @@ class TrendsAlertConfig(BaseModel):
         extra="forbid",
     )
     check_ongoing_interval: Optional[bool] = None
-    series_index: int
+    series_index: Union[int, Literal["any", "average"]]
     type: Literal["TrendsAlertConfig"] = "TrendsAlertConfig"
 
 

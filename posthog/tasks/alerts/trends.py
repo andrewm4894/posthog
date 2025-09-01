@@ -424,9 +424,63 @@ def _date_range_override_for_intervals(query: TrendsQuery, last_x_intervals: int
 
 def _pick_series_result(config: TrendsAlertConfig, results: InsightResult) -> TrendResult:
     series_index = config.series_index
-    result = cast(list[TrendResult], results.result)[series_index]
 
+    # Handle special case for "average of all breakdowns"
+    if series_index == "average":
+        return _create_averaged_breakdown_result(results)
+
+    # Handle "any breakdown value" case
+    if series_index == "any":
+        # For "any breakdown value", we'll use the first result as a representative
+        # The detector will evaluate against all breakdowns
+        return cast(list[TrendResult], results.result)[0]
+
+    # Regular case: specific series index
+    result = cast(list[TrendResult], results.result)[series_index]
     return result
+
+
+def _create_averaged_breakdown_result(results: InsightResult) -> TrendResult:
+    """Create a result that averages all breakdown values across time periods."""
+    trend_results = cast(list[TrendResult], results.result)
+
+    if not trend_results:
+        raise ValueError("No results to average")
+
+    # Get the first result to use as a template
+    template_result = trend_results[0]
+
+    # Check if this is a time series or aggregated result
+    if template_result.get("data"):
+        # Time series data - average across breakdowns for each time period
+        averaged_data = []
+        time_periods = len(template_result["data"])
+
+        for period_idx in range(time_periods):
+            period_values = []
+            for result in trend_results:
+                if "data" in result and len(result["data"]) > period_idx:
+                    period_values.append(result["data"][period_idx])
+
+            if period_values:
+                # Average the values for this time period
+                avg_value = sum(period_values) / len(period_values)
+                averaged_data.append(avg_value)
+
+        # Create averaged result
+        averaged_result = dict(template_result)
+        averaged_result["data"] = averaged_data
+        averaged_result["label"] = "Average of all breakdowns"
+        return averaged_result
+    else:
+        # Aggregated result (non-time series) - average the aggregated values
+        total_value = sum(result.get("aggregated_value", 0) for result in trend_results)
+        avg_value = total_value / len(trend_results)
+
+        averaged_result = dict(template_result)
+        averaged_result["aggregated_value"] = avg_value
+        averaged_result["label"] = "Average of all breakdowns"
+        return averaged_result
 
 
 def _pick_interval_value_from_trend_result(query: TrendsQuery, result: TrendResult, interval_to_pick: int = 0) -> float:
