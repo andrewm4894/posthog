@@ -62,6 +62,33 @@ Why this helps:
 - Existing Kafka ENGINE tables that point to `localhost:9092` work without recreating them.
 - Keeps local dev repeatable with minimal diffs.
 
+If you don't see demo data in the UI
+- Sometimes demo data lands in a different project than the one you're viewing.
+- Find the project (team_id) that has data and switch to it (e.g. `/project/18`).
+
+Quick checks
+```
+# 1) Which teams have data recently?
+docker exec -t posthog-clickhouse-1 clickhouse-client -q \
+  "SELECT team_id, count() AS c FROM default.events \
+   WHERE timestamp > now() - INTERVAL 2 HOUR \
+   GROUP BY team_id ORDER BY c DESC LIMIT 10 FORMAT Pretty"
+
+# 2) Map ids to names (optional)
+python manage.py shell -c "from posthog.models import Team; \
+import json; \
+print(json.dumps({t.id: t.name for t in Team.objects.filter(id__in=[2,18,19])}))"
+
+# 3) Ensure your user has access to that org (example: team_id=18)
+python manage.py shell -c "from posthog.models import Team, OrganizationMembership, User; \
+u=User.objects.get(email='test@posthog.com'); \
+org=Team.objects.get(id=18).organization; \
+OrganizationMembership.objects.get_or_create(organization=org, user=u, \
+    defaults={'level': OrganizationMembership.Level.MEMBER}); print('ok')"
+
+# 4) In the browser, switch to that project: http://localhost:8010/project/18
+```
+
 Troubleshooting person distinct IDs
 - Symptom: Persons land but Person Distinct IDs stall (e.g. stuck at 0/N).
 - Verify consumers inside ClickHouse:
