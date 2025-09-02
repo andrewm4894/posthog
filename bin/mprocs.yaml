@@ -51,7 +51,13 @@ procs:
 
     docker-compose:
         # docker-compose makes sure the stack is up, and then follows its logs - but doesn't tear down on exit for speed
-        shell: 'docker compose -f docker-compose.dev.yml up --pull always -d && docker compose -f docker-compose.dev.yml logs --tail=0 -f'
+        shell: |-
+            if [ -f docker-compose.dev.local.yml ]; then
+                DC_FILES="-f docker-compose.dev.yml -f docker-compose.dev.local.yml"
+            else
+                DC_FILES="-f docker-compose.dev.yml"
+            fi
+            docker compose $DC_FILES up --pull always -d && docker compose $DC_FILES logs --tail=0 -f
 
     cyclotron-janitor:
         shell: |-

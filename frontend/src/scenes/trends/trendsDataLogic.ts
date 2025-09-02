@@ -139,6 +139,45 @@ export const trendsDataLogic = kea<trendsDataLogicType>([
             },
         ],
 
+        /** available breakdown values for alert selection */
+        alertBreakdownValues: [
+            (s) => [s.indexedResults, s.isBreakdownValid],
+            (
+                indexedResults,
+                isBreakdownValid
+            ): Array<{ label: string; value: string | number; seriesIndex: number }> => {
+                if (!isBreakdownValid || !indexedResults.length) {
+                    return []
+                }
+
+                // Get unique breakdown values with their series indices
+                const breakdownMap = new Map<
+                    string | number,
+                    { label: string; value: string | number; seriesIndex: number }
+                >()
+
+                indexedResults.forEach((result) => {
+                    if (result.breakdown_value !== undefined) {
+                        const value = result.breakdown_value
+                        const label = String(value)
+                        const seriesIndex = result.seriesIndex
+
+                        if (!breakdownMap.has(value)) {
+                            breakdownMap.set(value, { label, value, seriesIndex })
+                        }
+                    }
+                })
+
+                return Array.from(breakdownMap.values()).sort((a, b) => {
+                    // Sort by series index first, then by label
+                    if (a.seriesIndex !== b.seriesIndex) {
+                        return a.seriesIndex - b.seriesIndex
+                    }
+                    return a.label.localeCompare(b.label)
+                })
+            },
+        ],
+
         results: [
             (s) => [s.insightData],
             (insightData: TrendAPIResponse | null): TrendResult[] => {

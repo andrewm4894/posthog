@@ -37,6 +37,58 @@ interface AlertListItemProps {
 export function AlertListItem({ alert, onClick }: AlertListItemProps): JSX.Element {
     const bounds = alert.threshold?.configuration?.bounds
     const isPercentage = alert.threshold?.configuration.type === InsightThresholdType.PERCENTAGE
+    const detectorType = alert.config?.detector_config?.type
+
+    const renderDetectorParams = (): JSX.Element | null => {
+        if (!alert.enabled) {
+            return <div className="text-secondary pl-3">Disabled</div>
+        }
+
+        // Threshold detector parameters
+        if (!detectorType || detectorType === 'threshold') {
+            if (bounds?.lower != null || bounds?.upper != null) {
+                return (
+                    <div className="text-secondary pl-3">
+                        {bounds?.lower != null &&
+                            `Low ${isPercentage ? bounds.lower * 100 : bounds.lower}${isPercentage ? '%' : ''}`}
+                        {bounds?.lower != null && bounds?.upper != null ? ' · ' : ''}
+                        {bounds?.upper != null &&
+                            `High ${isPercentage ? bounds.upper * 100 : bounds.upper}${isPercentage ? '%' : ''}`}
+                    </div>
+                )
+            }
+        }
+
+        // Z-score detector parameters
+        if (detectorType === 'zscore') {
+            const config = alert.config?.detector_config
+            const window = config?.window || 30
+            const threshold = config?.z_threshold || 3.0
+            const direction = config?.direction || 'both'
+            const on = config?.on || 'value'
+            return (
+                <div className="text-secondary pl-3">
+                    {threshold}σ · {direction} · {on} · {window}w
+                </div>
+            )
+        }
+
+        // MAD detector parameters
+        if (detectorType === 'mad') {
+            const config = alert.config?.detector_config
+            const k = config?.k || 3.5
+            const direction = config?.direction || 'both'
+            const on = config?.on || 'value'
+            const window = config?.window || 30
+            return (
+                <div className="text-secondary pl-3">
+                    {k}k · {direction} · {on} · {window}w
+                </div>
+            )
+        }
+
+        return null
+    }
 
     return (
         <LemonButton type="secondary" onClick={onClick} data-attr="alert-list-item" fullWidth>
@@ -45,17 +97,7 @@ export function AlertListItem({ alert, onClick }: AlertListItemProps): JSX.Eleme
                     <span>{alert.name}</span>
                     <AlertStateIndicator alert={alert} />
 
-                    {alert.enabled ? (
-                        <div className="text-secondary pl-3">
-                            {bounds?.lower != null &&
-                                `Low ${isPercentage ? bounds.lower * 100 : bounds.lower}${isPercentage ? '%' : ''}`}
-                            {bounds?.lower != null && bounds?.upper != null ? ' · ' : ''}
-                            {bounds?.upper != null &&
-                                `High ${isPercentage ? bounds.upper * 100 : bounds.upper}${isPercentage ? '%' : ''}`}
-                        </div>
-                    ) : (
-                        <div className="text-secondary pl-3">Disabled</div>
-                    )}
+                    {renderDetectorParams()}
                 </div>
 
                 <ProfileBubbles limit={4} people={alert.subscribed_users?.map(({ email }) => ({ email }))} />

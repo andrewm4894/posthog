@@ -111,6 +111,48 @@ export const alertFormLogic = kea<alertFormLogicType>([
                 name: !name ? 'You need to give your alert a name' : undefined,
             }),
             submit: async (alert) => {
+                // sanitize detector_config to keep it minimal (store only non-defaults)
+                const defaults = {
+                    zscore: { window: 30, z_threshold: 3.0, on: 'value', direction: 'both' },
+                    mad: { window: 30, k: 3.5, on: 'value', direction: 'both' },
+                } as const
+                const detectorRaw = alert.config?.detector_config
+                let detectorSanitized = detectorRaw
+                if (detectorRaw?.type === 'zscore') {
+                    const d = detectorRaw as Record<string, any>
+                    const out: Record<string, any> = { type: 'zscore' }
+                    if (d.window != null && Number(d.window) !== defaults.zscore.window) {
+                        out.window = Number(d.window)
+                    }
+                    if (d.z_threshold != null && Number(d.z_threshold) !== defaults.zscore.z_threshold) {
+                        out.z_threshold = Number(d.z_threshold)
+                    }
+                    if ((d.on || 'value') !== defaults.zscore.on) {
+                        out.on = d.on
+                    }
+                    if ((d.direction || 'both') !== defaults.zscore.direction) {
+                        out.direction = d.direction
+                    }
+                    detectorSanitized = out
+                }
+                if (detectorRaw?.type === 'mad') {
+                    const d = detectorRaw as Record<string, any>
+                    const out: Record<string, any> = { type: 'mad' }
+                    if (d.window != null && Number(d.window) !== defaults.mad.window) {
+                        out.window = Number(d.window)
+                    }
+                    if (d.k != null && Number(d.k) !== defaults.mad.k) {
+                        out.k = Number(d.k)
+                    }
+                    if ((d.on || 'value') !== defaults.mad.on) {
+                        out.on = d.on
+                    }
+                    if ((d.direction || 'both') !== defaults.mad.direction) {
+                        out.direction = d.direction
+                    }
+                    detectorSanitized = out
+                }
+
                 const payload: AlertTypeWrite = {
                     ...alert,
                     subscribed_users: alert.subscribed_users?.map(({ id }) => id),
@@ -124,6 +166,7 @@ export const alertFormLogic = kea<alertFormLogicType>([
                     config: {
                         ...alert.config,
                         check_ongoing_interval: canCheckOngoingInterval(alert) && alert.config.check_ongoing_interval,
+                        detector_config: detectorSanitized,
                     },
                 }
 

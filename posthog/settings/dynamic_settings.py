@@ -103,6 +103,12 @@ CONSTANCE_CONFIG = {
         "Credentials to connect to the email host.",
         str,
     ),
+    # Alerts v2 feature flag
+    "ALERTS_DETECTORS_ENABLED": (
+        get_from_env("ALERTS_DETECTORS_ENABLED", False, type_cast=str_to_bool),
+        "Enable detector-based alerts (z-score, MAD, etc).",
+        bool,
+    ),
     "EMAIL_USE_TLS": (
         get_from_env("EMAIL_USE_TLS", False, type_cast=str_to_bool),
         "Whether to use TLS protocol when connecting to the email host.",

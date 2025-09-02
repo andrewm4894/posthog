@@ -15,6 +15,10 @@ from posthog.api.services.query import ExecutionMode
 from posthog.caching.calculate_results import calculate_for_query_based_insight
 from posthog.caching.fetch_from_cache import InsightResult
 from posthog.models import AlertConfiguration, Insight
+from posthog.models.instance_setting import get_instance_setting
+from posthog.tasks.alerts.detectors.base import DetectorContext, get_detector
+from posthog.tasks.alerts.detectors.threshold import ThresholdBounds, ThresholdConfig
+from posthog.tasks.alerts.detectors.zscore import ZScoreConfig
 from posthog.tasks.alerts.utils import NON_TIME_SERIES_DISPLAY_TYPES, AlertEvaluationResult
 
 
@@ -51,7 +55,9 @@ def check_trends_alert(alert: AlertConfiguration, insight: Insight, query: Trend
     """
 
     if "type" in alert.config and alert.config["type"] == "TrendsAlertConfig":
-        config = TrendsAlertConfig.model_validate(alert.config)
+        _cfg = dict(alert.config)
+        _cfg.pop("detector_config", None)
+        config = TrendsAlertConfig.model_validate(_cfg)
     else:
         ValueError(f"Unsupported alert config type: {alert.config}")
 
@@ -66,6 +72,56 @@ def check_trends_alert(alert: AlertConfiguration, insight: Insight, query: Trend
     )
     is_non_time_series = _is_non_time_series_trend(query)
     check_current_interval = config.check_ongoing_interval
+
+    # Detector path (feature-flagged)
+    detectors_enabled = bool(get_instance_setting("ALERTS_DETECTORS_ENABLED"))
+    detector_cfg = (alert.config or {}).get("detector_config") if isinstance(alert.config, dict) else None
+
+    if detectors_enabled and detector_cfg:
+        # Build window to include necessary history; default to 30 if not provided
+        window = int(detector_cfg.get("window", 30))
+        last_x = max(2, window + 1)
+        filters_override = _date_range_override_for_intervals(query, last_x_intervals=last_x)
+        calculation_result = calculate_for_query_based_insight(
+            insight,
+            team=alert.team,
+            execution_mode=ExecutionMode.RECENT_CACHE_CALCULATE_BLOCKING_IF_STALE,
+            user=None,
+            filters_override=filters_override,
+        )
+
+        results = cast(list[TrendResult], calculation_result.result)
+        if not results:
+            return AlertEvaluationResult(value=None, breaches=[])
+        _cfg2 = dict(alert.config)
+        _cfg2.pop("detector_config", None)
+        selected = _pick_series_result(
+            cast(TrendsAlertConfig, TrendsAlertConfig.model_validate(_cfg2)), calculation_result
+        )
+        series = selected["data"]
+        ctx = DetectorContext(series=series, label=selected.get("label"))
+        dtype = str(detector_cfg.get("type", "threshold")).lower()
+        if dtype == "zscore":
+            cfg = ZScoreConfig(
+                window=int(detector_cfg.get("window", 30)),
+                on=str(detector_cfg.get("on", "value")),
+                z_threshold=float(detector_cfg.get("z_threshold", 3.0)),
+                two_tailed=bool(detector_cfg.get("two_tailed", True)),
+                min_points=int(detector_cfg.get("min_points", 10)),
+            )
+            return get_detector("zscore").evaluate(ctx, cfg)
+        else:
+            # default threshold detector
+            bounds = detector_cfg.get("bounds", {})
+            cfg = ThresholdConfig(
+                on=str(detector_cfg.get("on", "value")),
+                bounds=ThresholdBounds(
+                    lower=bounds.get("lower"),
+                    upper=bounds.get("upper"),
+                ),
+                two_tailed=bool(detector_cfg.get("two_tailed", True)),
+            )
+            return get_detector("threshold").evaluate(ctx, cfg)
 
     match condition.type:
         case AlertConditionType.ABSOLUTE_VALUE:
@@ -368,9 +424,63 @@ def _date_range_override_for_intervals(query: TrendsQuery, last_x_intervals: int
 
 def _pick_series_result(config: TrendsAlertConfig, results: InsightResult) -> TrendResult:
     series_index = config.series_index
-    result = cast(list[TrendResult], results.result)[series_index]
 
+    # Handle special case for "average of all breakdowns"
+    if series_index == "average":
+        return _create_averaged_breakdown_result(results)
+
+    # Handle "any breakdown value" case
+    if series_index == "any":
+        # For "any breakdown value", we'll use the first result as a representative
+        # The detector will evaluate against all breakdowns
+        return cast(list[TrendResult], results.result)[0]
+
+    # Regular case: specific series index
+    result = cast(list[TrendResult], results.result)[series_index]
     return result
+
+
+def _create_averaged_breakdown_result(results: InsightResult) -> TrendResult:
+    """Create a result that averages all breakdown values across time periods."""
+    trend_results = cast(list[TrendResult], results.result)
+
+    if not trend_results:
+        raise ValueError("No results to average")
+
+    # Get the first result to use as a template
+    template_result = trend_results[0]
+
+    # Check if this is a time series or aggregated result
+    if template_result.get("data"):
+        # Time series data - average across breakdowns for each time period
+        averaged_data = []
+        time_periods = len(template_result["data"])
+
+        for period_idx in range(time_periods):
+            period_values = []
+            for result in trend_results:
+                if "data" in result and len(result["data"]) > period_idx:
+                    period_values.append(result["data"][period_idx])
+
+            if period_values:
+                # Average the values for this time period
+                avg_value = sum(period_values) / len(period_values)
+                averaged_data.append(avg_value)
+
+        # Create averaged result
+        averaged_result = dict(template_result)
+        averaged_result["data"] = averaged_data
+        averaged_result["label"] = "Average of all breakdowns"
+        return averaged_result
+    else:
+        # Aggregated result (non-time series) - average the aggregated values
+        total_value = sum(result.get("aggregated_value", 0) for result in trend_results)
+        avg_value = total_value / len(trend_results)
+
+        averaged_result = dict(template_result)
+        averaged_result["aggregated_value"] = avg_value
+        averaged_result["label"] = "Average of all breakdowns"
+        return averaged_result
 
 
 def _pick_interval_value_from_trend_result(query: TrendsQuery, result: TrendResult, interval_to_pick: int = 0) -> float:

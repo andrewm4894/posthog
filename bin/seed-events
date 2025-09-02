@@ -1,0 +1,111 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+usage() {
+    cat <<EOF
+Seed synthetic events into a local PostHog dev stack via /e endpoint.
+
+Usage:
+  bin/seed-events -t <team_id> [-e <event>] [-n <count>] [-p <prefix>] [-i <ms>] [--today] [--days N] [--jitter-ms M]
+  bin/seed-events -k <api_key> [-e <event>] [-n <count>] [-p <prefix>] [-i <ms>] [--today] [--days N] [--jitter-ms M]
+
+Options:
+  -t, --team         Team id (project id). If provided, api_key will be looked up via manage.py
+  -k, --api-key      API key (team token). Overrides --team lookup
+  -e, --event        Event name (default: $pageview)
+  -n, --count        Number of events to send (default: 500)
+  -p, --prefix       Distinct id prefix (default: seed)
+  -i, --interval     Inter-event sleep in milliseconds (default: 0)
+      --today        Force timestamps to today UTC (default)
+      --days N       Backdate over N days (uniform spread). Overrides --today
+      --jitter-ms M  Randomize +/- M milliseconds per event (default: 0)
+
+Examples:
+  bin/seed-events -t 18 -e "$pageview" -n 600 --today
+  bin/seed-events -t 18 -e "$pageview" -n 2000 --days 7 --jitter-ms 250
+EOF
+}
+
+TEAM_ID=""
+API_KEY=""
+EVENT="\$pageview"
+COUNT=500
+PREFIX="seed"
+INTERVAL_MS=0
+SPREAD_DAYS=0
+JITTER_MS=0
+
+# Parse args
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -t|--team) TEAM_ID="$2"; shift 2;;
+        -k|--api-key) API_KEY="$2"; shift 2;;
+        -e|--event) EVENT="$2"; shift 2;;
+        -n|--count) COUNT="$2"; shift 2;;
+        -p|--prefix) PREFIX="$2"; shift 2;;
+        -i|--interval) INTERVAL_MS="$2"; shift 2;;
+        --days) SPREAD_DAYS="$2"; shift 2;;
+        --today) SPREAD_DAYS=0; shift 1;;
+        --jitter-ms) JITTER_MS="$2"; shift 2;;
+        -h|--help) usage; exit 0;;
+        *) echo "Unknown arg: $1" >&2; usage; exit 1;;
+    esac
+done
+
+if [[ -z "$API_KEY" && -z "$TEAM_ID" ]]; then
+    echo "Provide --api-key or --team" >&2; exit 1
+fi
+
+# Resolve api key from team id if needed
+if [[ -z "$API_KEY" ]]; then
+    if ! command -v flox >/dev/null 2>&1; then
+        echo "flox not found; ensure manage.py can import Django settings" >&2; exit 1
+    fi
+    API_KEY=$(flox activate -- bash -lc "python manage.py shell -c 'from posthog.models import Team; print(Team.objects.get(id=$TEAM_ID).api_token)' | tail -n1")
+fi
+
+echo "Using api_key=${API_KEY:0:12}... event=$EVENT count=$COUNT prefix=$PREFIX spread_days=$SPREAD_DAYS interval_ms=$INTERVAL_MS jitter_ms=$JITTER_MS"
+
+post_event() {
+    local payload="$1"
+    curl -sS -X POST -H 'Content-Type: application/json' -d "$payload" 'http://localhost:8010/e/' >/dev/null
+}
+
+rand_between() {
+    local min=$1 max=$2
+    echo $(( RANDOM % (max - min + 1) + min ))
+}
+
+start_ts_epoch_ms=$(date -u +%s%3N)
+
+for i in $(seq 1 "$COUNT"); do
+    # Compute timestamp
+    if [[ "$SPREAD_DAYS" -gt 0 ]]; then
+        # Uniformly spread over past N days
+        offset_days=$(rand_between 0 "$SPREAD_DAYS")
+        # Spread across day: random seconds in day
+        offset_secs=$(rand_between 0 86399)
+        ts_iso=$(date -u -d "-$offset_days day -$((86399 - offset_secs)) sec" +%Y-%m-%dT%H:%M:%S.%3NZ)
+    else
+        # today, optionally jittered around now
+        jitter=0
+        if [[ "$JITTER_MS" -gt 0 ]]; then
+            jitter=$(rand_between -$JITTER_MS $JITTER_MS)
+        fi
+        ts_epoch_ms=$(( start_ts_epoch_ms + jitter ))
+        ts_iso=$(date -u -d @$(echo "scale=3; $ts_epoch_ms/1000" | bc) +%Y-%m-%dT%H:%M:%S.%3NZ)
+    fi
+
+    did="$PREFIX-$i"
+    payload=$(jq -c -n --arg api_key "$API_KEY" --arg event "$EVENT" --arg did "$did" --arg ts "$ts_iso" '{api_key:$api_key, event:$event, distinct_id:$did, timestamp:$ts}')
+    post_event "$payload"
+
+    if [[ "$INTERVAL_MS" -gt 0 ]]; then
+        sleep "0.$(printf "%03d" "$INTERVAL_MS")"
+    fi
+done
+
+echo "Done: sent $COUNT events for event=$EVENT"
+
+
