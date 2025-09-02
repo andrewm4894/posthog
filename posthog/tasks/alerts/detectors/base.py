@@ -13,6 +13,14 @@ class DetectorContext:
     # optional label/series name
     label: Optional[str] = None
 
+    def get_latest_value(self) -> float:
+        """Get the most recent raw metric value."""
+        return self.series[-1] if self.series else 0.0
+
+    def get_previous_value(self) -> float:
+        """Get the second-to-last raw metric value."""
+        return self.series[-2] if len(self.series) > 1 else 0.0
+
 
 @runtime_checkable
 class DetectorConfig(Protocol):

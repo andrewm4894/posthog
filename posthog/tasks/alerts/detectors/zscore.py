@@ -49,23 +49,32 @@ class ZScoreDetectorImpl:
         breaches: list[str] = []
         thr = abs(config.z_threshold)
         direction = (config.direction or "both").lower()
-        on_desc = config.on or "value"
         window = config.window or 30
+
+        # Get raw metric values for context
+        latest_value = ctx.get_latest_value()
+
+        if config.on == "delta":
+            previous_value = ctx.get_previous_value()
+            delta_value = latest_value - previous_value
+            metric_context = f"delta from {previous_value:.1f} to {latest_value:.1f} (Δ={delta_value:+.1f})"
+        else:
+            metric_context = f"value {latest_value:.1f}"
 
         if direction == "both" or config.two_tailed:
             if abs(z) >= thr:
                 breaches.append(
-                    f"Z-score alert: {on_desc.title()} {abs(z):.1f}σ exceeds threshold {thr}σ (direction: {direction}, window: {window}, on: {on_desc})"
+                    f"Z-score alert: Metric {metric_context} has z-score {z:+.1f}σ exceeding threshold ±{thr}σ (window: {window} periods)"
                 )
         elif direction == "up":
             if z >= thr:
                 breaches.append(
-                    f"Z-score alert: {on_desc.title()} {z:.1f}σ exceeds upward threshold {thr}σ (window: {window}, on: {on_desc})"
+                    f"Z-score alert: Metric {metric_context} has z-score {z:+.1f}σ exceeding upward threshold +{thr}σ (window: {window} periods)"
                 )
         elif direction == "down":
             if z <= -thr:
                 breaches.append(
-                    f"Z-score alert: {on_desc.title()} {z:.1f}σ exceeds downward threshold -{thr}σ (window: {window}, on: {on_desc})"
+                    f"Z-score alert: Metric {metric_context} has z-score {z:+.1f}σ exceeding downward threshold -{thr}σ (window: {window} periods)"
                 )
 
         return AlertEvaluationResult(value=float(z), breaches=breaches)
