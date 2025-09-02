@@ -58,11 +58,7 @@ function alertCalculationIntervalToLabel(interval: AlertCalculationInterval): st
     }
 }
 
-<<<<<<< HEAD
-function formatAlertValue(check: AlertCheck, detectorType?: string): string {
-=======
 function formatAlertValue(check: any, detectorType?: string): string {
->>>>>>> a1e96bf00e (Add separate Value and Score columns for Z-score and MAD alerts)
     // For threshold alerts, show the calculated value (which is the raw metric)
     if (!detectorType || detectorType === 'threshold') {
         const value = check.calculated_value
@@ -80,11 +76,7 @@ function formatAlertValue(check: any, detectorType?: string): string {
     return rawValue.toLocaleString()
 }
 
-<<<<<<< HEAD
-function formatAlertScore(check: AlertCheck, detectorType?: string): string {
-=======
 function formatAlertScore(check: any, detectorType?: string): string {
->>>>>>> a1e96bf00e (Add separate Value and Score columns for Z-score and MAD alerts)
     const value = check.calculated_value
     if (value === null || value === undefined) {
         return ''
