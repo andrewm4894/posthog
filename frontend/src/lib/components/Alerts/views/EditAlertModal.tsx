@@ -42,7 +42,7 @@ import { alertFormLogic, canCheckOngoingInterval } from '../alertFormLogic'
 import { alertLogic } from '../alertLogic'
 import { DetectorConfigForm } from '../detectors/DetectorConfigForm'
 import { DetectorPicker } from '../detectors/DetectorPicker'
-import { AlertCheck, AlertType } from '../types'
+import { AlertType } from '../types'
 import { AlertDestinationSelector } from './AlertDestinationSelector'
 
 function alertCalculationIntervalToLabel(interval: AlertCalculationInterval): string {
@@ -58,7 +58,11 @@ function alertCalculationIntervalToLabel(interval: AlertCalculationInterval): st
     }
 }
 
+<<<<<<< HEAD
 function formatAlertValue(check: AlertCheck, detectorType?: string): string {
+=======
+function formatAlertValue(check: any, detectorType?: string): string {
+>>>>>>> a1e96bf00e (Add separate Value and Score columns for Z-score and MAD alerts)
     // For threshold alerts, show the calculated value (which is the raw metric)
     if (!detectorType || detectorType === 'threshold') {
         const value = check.calculated_value
@@ -76,7 +80,11 @@ function formatAlertValue(check: AlertCheck, detectorType?: string): string {
     return rawValue.toLocaleString()
 }
 
+<<<<<<< HEAD
 function formatAlertScore(check: AlertCheck, detectorType?: string): string {
+=======
+function formatAlertScore(check: any, detectorType?: string): string {
+>>>>>>> a1e96bf00e (Add separate Value and Score columns for Z-score and MAD alerts)
     const value = check.calculated_value
     if (value === null || value === undefined) {
         return 'N/A'
