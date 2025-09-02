@@ -77,7 +77,7 @@ class ZScoreDetectorImpl:
                     f"Z-score alert: Metric {metric_context} has z-score {z:+.1f}σ exceeding downward threshold -{thr}σ (window: {window} periods)"
                 )
 
-        return AlertEvaluationResult(value=float(z), breaches=breaches)
+        return AlertEvaluationResult(value=float(z), breaches=breaches, raw_value=latest_value)
 
 
 register_detector("zscore", ZScoreDetectorImpl())

@@ -32,6 +32,7 @@ export interface AlertCheck {
     id: string
     created_at: string
     calculated_value: number
+    raw_value?: number // Raw metric value (for Z-score and MAD detectors)
     state: AlertState
     targets_notified: boolean
 }

@@ -73,7 +73,7 @@ class MADDetectorImpl:
                     f"MAD alert: Metric {metric_context} has robust score {robust:+.1f} exceeding downward threshold -{thr} (window: {window} periods)"
                 )
 
-        return AlertEvaluationResult(value=float(robust), breaches=breaches)
+        return AlertEvaluationResult(value=float(robust), breaches=breaches, raw_value=latest_value)
 
 
 register_detector("mad", MADDetectorImpl())

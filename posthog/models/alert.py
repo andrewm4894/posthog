@@ -151,7 +151,10 @@ class AlertSubscription(ModelActivityMixin, CreatedMetaFields, UUIDTModel):
 class AlertCheck(UUIDTModel):
     alert_configuration = models.ForeignKey(AlertConfiguration, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
-    calculated_value = models.FloatField(null=True, blank=True)
+    calculated_value = models.FloatField(
+        null=True, blank=True
+    )  # Detector score (z-score, MAD score, or raw value for threshold)
+    raw_value = models.FloatField(null=True, blank=True)  # Raw metric value (for Z-score and MAD detectors)
     condition = models.JSONField(default=dict)  # Snapshot of the condition at the time of the check
     targets_notified = models.JSONField(default=dict)
     error = models.JSONField(null=True, blank=True)

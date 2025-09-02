@@ -19,8 +19,9 @@ logger = structlog.get_logger(__name__)
 
 @dataclass
 class AlertEvaluationResult:
-    value: float | None
+    value: float | None  # Detector score (z-score, MAD score, or raw value for threshold)
     breaches: list[str] | None
+    raw_value: float | None = None  # Raw metric value (for Z-score and MAD detectors)
 
 
 WRAPPER_NODE_KINDS = [NodeKind.DATA_TABLE_NODE, NodeKind.DATA_VISUALIZATION_NODE, NodeKind.INSIGHT_VIZ_NODE]

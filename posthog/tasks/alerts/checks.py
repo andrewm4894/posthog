@@ -298,13 +298,14 @@ def check_alert_and_notify_atomically(alert: AlertConfiguration, capture_ph_even
         },
     )
 
-    value = breaches = error = None
+    value = breaches = error = raw_value = None
 
     # 1. Evaluate insight and get alert value
     try:
         alert_evaluation_result = check_alert_for_insight(alert)
         value = alert_evaluation_result.value
         breaches = alert_evaluation_result.breaches
+        raw_value = alert_evaluation_result.raw_value
     except CHQueryErrorTooManySimultaneousQueries:
         # error on our side so we raise
         # as celery task can be retried according to config
@@ -330,7 +331,7 @@ def check_alert_and_notify_atomically(alert: AlertConfiguration, capture_ph_even
         error = {"message": str(err), "traceback": traceback.format_exc()}
 
     # 2. Check alert value against threshold
-    alert_check = add_alert_check(alert, value, breaches, error)
+    alert_check = add_alert_check(alert, value, breaches, error, raw_value)
 
     # 3. Notify users if needed
     if not alert_check.targets_notified:
@@ -380,7 +381,11 @@ def check_alert_for_insight(alert: AlertConfiguration) -> AlertEvaluationResult:
 
 
 def add_alert_check(
-    alert: AlertConfiguration, value: float | None, breaches: list[str] | None, error: dict | None
+    alert: AlertConfiguration,
+    value: float | None,
+    breaches: list[str] | None,
+    error: dict | None,
+    raw_value: float | None = None,
 ) -> AlertCheck:
     notify = False
     targets_notified = {}
@@ -409,6 +414,7 @@ def add_alert_check(
     alert_check = AlertCheck.objects.create(
         alert_configuration=alert,
         calculated_value=value,
+        raw_value=raw_value,
         condition=alert.condition,
         targets_notified=targets_notified,
         state=alert.state,

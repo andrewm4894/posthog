@@ -42,7 +42,7 @@ import { alertFormLogic, canCheckOngoingInterval } from '../alertFormLogic'
 import { alertLogic } from '../alertLogic'
 import { DetectorConfigForm } from '../detectors/DetectorConfigForm'
 import { DetectorPicker } from '../detectors/DetectorPicker'
-import { AlertType } from '../types'
+import { AlertCheck, AlertType } from '../types'
 import { AlertDestinationSelector } from './AlertDestinationSelector'
 
 function alertCalculationIntervalToLabel(interval: AlertCalculationInterval): string {
@@ -58,10 +58,50 @@ function alertCalculationIntervalToLabel(interval: AlertCalculationInterval): st
     }
 }
 
+function formatAlertValue(check: AlertCheck, detectorType?: string): string {
+    // For threshold alerts, show the calculated value (which is the raw metric)
+    if (!detectorType || detectorType === 'threshold') {
+        const value = check.calculated_value
+        if (value === null || value === undefined) {
+            return 'N/A'
+        }
+        return value.toLocaleString()
+    }
+
+    // For Z-score and MAD alerts, show the raw metric value
+    const rawValue = check.raw_value
+    if (rawValue === null || rawValue === undefined) {
+        return 'N/A'
+    }
+    return rawValue.toLocaleString()
+}
+
+function formatAlertScore(check: AlertCheck, detectorType?: string): string {
+    const value = check.calculated_value
+    if (value === null || value === undefined) {
+        return 'N/A'
+    }
+
+    // Only show detector scores for Z-score and MAD alerts
+    if (detectorType === 'zscore') {
+        return `${value.toFixed(1)}σ`
+    }
+
+    if (detectorType === 'mad') {
+        return `${value.toFixed(1)}`
+    }
+
+    // For threshold alerts, no separate score column needed
+    return 'N/A'
+}
+
 export function AlertStateTable({ alert }: { alert: AlertType }): JSX.Element | null {
     if (!alert.checks || alert.checks.length === 0) {
         return null
     }
+
+    const detectorType = alert.config?.detector_config?.type
+    const showScoreColumn = detectorType === 'zscore' || detectorType === 'mad'
 
     return (
         <div className="bg-primary p-4 mt-10 rounded-lg">
@@ -77,7 +117,18 @@ export function AlertStateTable({ alert }: { alert: AlertType }): JSX.Element | 
                     <tr className="text-left">
                         <th>Status</th>
                         <th className="text-right">Time</th>
-                        <th className="text-right pr-4">Value</th>
+                        <th className="text-right pr-4">
+                            Value
+                            {showScoreColumn && <div className="text-xs text-muted font-normal">Raw metric</div>}
+                        </th>
+                        {showScoreColumn && (
+                            <th className="text-right pr-4">
+                                Score
+                                <div className="text-xs text-muted font-normal">
+                                    {detectorType === 'zscore' ? 'Z-score' : 'MAD score'}
+                                </div>
+                            </th>
+                        )}
                         <th>Targets notified</th>
                     </tr>
                 </thead>
@@ -88,7 +139,10 @@ export function AlertStateTable({ alert }: { alert: AlertType }): JSX.Element | 
                             <td className="text-right">
                                 <TZLabel time={check.created_at} />
                             </td>
-                            <td className="text-right pr-4">{check.calculated_value}</td>
+                            <td className="text-right pr-4">{formatAlertValue(check, detectorType)}</td>
+                            {showScoreColumn && (
+                                <td className="text-right pr-4">{formatAlertScore(check, detectorType)}</td>
+                            )}
                             <td>{check.targets_notified ? 'Yes' : 'No'}</td>
                         </tr>
                     ))}
