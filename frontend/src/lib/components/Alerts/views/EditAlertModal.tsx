@@ -67,7 +67,7 @@ function formatAlertValue(check: any, detectorType?: string): string {
     if (!detectorType || detectorType === 'threshold') {
         const value = check.calculated_value
         if (value === null || value === undefined) {
-            return 'N/A'
+            return ''
         }
         return value.toLocaleString()
     }
@@ -75,7 +75,7 @@ function formatAlertValue(check: any, detectorType?: string): string {
     // For Z-score and MAD alerts, show the raw metric value
     const rawValue = check.raw_value
     if (rawValue === null || rawValue === undefined) {
-        return 'N/A'
+        return ''
     }
     return rawValue.toLocaleString()
 }
@@ -87,7 +87,7 @@ function formatAlertScore(check: any, detectorType?: string): string {
 >>>>>>> a1e96bf00e (Add separate Value and Score columns for Z-score and MAD alerts)
     const value = check.calculated_value
     if (value === null || value === undefined) {
-        return 'N/A'
+        return ''
     }
 
     // Only show detector scores for Z-score and MAD alerts
@@ -100,7 +100,7 @@ function formatAlertScore(check: any, detectorType?: string): string {
     }
 
     // For threshold alerts, no separate score column needed
-    return 'N/A'
+    return ''
 }
 
 export function AlertStateTable({ alert }: { alert: AlertType }): JSX.Element | null {
@@ -125,18 +125,8 @@ export function AlertStateTable({ alert }: { alert: AlertType }): JSX.Element | 
                     <tr className="text-left">
                         <th>Status</th>
                         <th className="text-right">Time</th>
-                        <th className="text-right pr-4">
-                            Value
-                            {showScoreColumn && <div className="text-xs text-muted font-normal">Raw metric</div>}
-                        </th>
-                        {showScoreColumn && (
-                            <th className="text-right pr-4">
-                                Score
-                                <div className="text-xs text-muted font-normal">
-                                    {detectorType === 'zscore' ? 'Z-score' : 'MAD score'}
-                                </div>
-                            </th>
-                        )}
+                        <th className="text-right pr-4">Value</th>
+                        {showScoreColumn && <th className="text-right pr-4">Score</th>}
                         <th>Targets notified</th>
                     </tr>
                 </thead>
