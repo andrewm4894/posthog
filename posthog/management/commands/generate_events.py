@@ -10,6 +10,8 @@ import json
 import time
 import random
 from datetime import datetime, timedelta
+from typing import Any, Optional
+from urllib.parse import urlparse
 
 from django.core.management.base import BaseCommand, CommandError
 
@@ -84,6 +86,11 @@ class Command(BaseCommand):
             default="http://localhost:8010/e/",
             help="PostHog capture endpoint (default: http://localhost:8010/e/)",
         )
+        parser.add_argument(
+            "--realistic",
+            action="store_true",
+            help="Generate realistic properties for standard events (e.g., $pageview gets $current_url, $browser, etc.)",
+        )
 
     def handle(self, *args, **options):
         # Validate arguments
@@ -154,6 +161,12 @@ class Command(BaseCommand):
                 "timestamp": ts_iso,
             }
 
+            # Add realistic properties if requested
+            if options["realistic"]:
+                properties = self._generate_realistic_properties(event, i)
+                if properties:
+                    payload["properties"] = properties
+
             if dry_run:
                 self.stdout.write(f"Would send: {json.dumps(payload)}")
             else:
@@ -182,3 +195,96 @@ class Command(BaseCommand):
     def _rand_between(self, min_val: int, max_val: int) -> int:
         """Generate random integer between min and max (inclusive)."""
         return random.randint(min_val, max_val)
+
+    def _generate_realistic_properties(self, event: str, event_index: int) -> Optional[dict[str, Any]]:
+        """Generate realistic properties for standard PostHog events."""
+        if event == "$pageview":
+            return self._generate_pageview_properties(event_index)
+        elif event == "$autocapture":
+            return self._generate_autocapture_properties(event_index)
+        elif event == "$identify":
+            return self._generate_identify_properties(event_index)
+        # For custom events, return None to keep them minimal
+        return None
+
+    def _generate_pageview_properties(self, event_index: int) -> dict[str, Any]:
+        """Generate realistic properties for $pageview events."""
+        # Sample URLs and pages
+        pages = [
+            "https://example.com/",
+            "https://example.com/about",
+            "https://example.com/products",
+            "https://example.com/contact",
+            "https://example.com/blog",
+            "https://example.com/pricing",
+            "https://example.com/docs",
+            "https://example.com/support",
+        ]
+
+        browsers = ["Chrome", "Firefox", "Safari", "Edge"]
+        operating_systems = ["Windows", "macOS", "Linux", "iOS", "Android"]
+        device_types = ["Desktop", "Mobile", "Tablet"]
+
+        # Sample referrers
+        referrers = [
+            "https://google.com/search?q=example",
+            "https://github.com/example/repo",
+            "https://stackoverflow.com/questions/123456",
+            "https://example.com/",
+            "$direct",
+        ]
+
+        current_url = random.choice(pages)
+        parsed_url = urlparse(current_url)
+
+        properties = {
+            "$current_url": current_url,
+            "$host": parsed_url.netloc,
+            "$pathname": parsed_url.path,
+            "$browser": random.choice(browsers),
+            "$os": random.choice(operating_systems),
+            "$device_type": random.choice(device_types),
+            "$session_id": f"session_{random.randint(1000, 9999)}",
+            "title": f"Page {event_index} - Example Site",
+        }
+
+        # Add referrer sometimes
+        if random.random() < 0.7:  # 70% chance of having a referrer
+            referrer = random.choice(referrers)
+            properties["$referrer"] = referrer
+            if referrer != "$direct":
+                properties["$referring_domain"] = urlparse(referrer).netloc
+
+        # Add some UTM parameters sometimes
+        if random.random() < 0.3:  # 30% chance of UTM params
+            utm_sources = ["google", "facebook", "twitter", "linkedin", "email"]
+            utm_mediums = ["cpc", "social", "email", "organic"]
+            utm_campaigns = ["summer_sale", "product_launch", "newsletter", "retargeting"]
+
+            properties["utm_source"] = random.choice(utm_sources)
+            properties["utm_medium"] = random.choice(utm_mediums)
+            properties["utm_campaign"] = random.choice(utm_campaigns)
+
+        return properties
+
+    def _generate_autocapture_properties(self, event_index: int) -> dict[str, Any]:
+        """Generate realistic properties for $autocapture events."""
+        return {
+            "$event_type": "click",
+            "$elements": [
+                {
+                    "tag_name": "button",
+                    "text": f"Click me {event_index}",
+                    "attr__class": "btn btn-primary",
+                }
+            ],
+        }
+
+    def _generate_identify_properties(self, event_index: int) -> dict[str, Any]:
+        """Generate realistic properties for $identify events."""
+        return {
+            "$set": {
+                "email": f"user{event_index}@example.com",
+                "name": f"User {event_index}",
+            }
+        }
