@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from statistics import mean, pstdev
+
+import numpy as np
 
 from posthog.tasks.alerts.utils import AlertEvaluationResult
 
@@ -25,12 +26,12 @@ class ZScoreDetectorImpl:
         if len(series) < max(2, config.min_points):
             return AlertEvaluationResult(value=None, breaches=[])
 
-        def transform(seq: list[float]) -> list[float]:
+        def transform(seq: list[float]) -> np.ndarray:
             if config.on == "value":
-                return seq
+                return np.array(seq)
             if config.on == "delta":
-                return [b - a for a, b in zip(seq[:-1], seq[1:])]
-            return seq
+                return np.diff(seq)
+            return np.array(seq)
 
         x = transform(series)
         if len(x) < max(2, config.min_points):
@@ -42,8 +43,8 @@ class ZScoreDetectorImpl:
 
         current = tail[-1]
         baseline = tail[:-1]
-        mu = mean(baseline)
-        sigma = pstdev(baseline) if len(baseline) > 1 else 0.0
+        mu = np.mean(baseline)
+        sigma = np.std(baseline, ddof=0) if len(baseline) > 1 else 0.0
         z = (current - mu) / (sigma + 1e-12)
 
         breaches: list[str] = []

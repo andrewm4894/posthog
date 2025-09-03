@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from statistics import median
+
+import numpy as np
 
 from posthog.tasks.alerts.utils import AlertEvaluationResult
 
@@ -24,12 +25,12 @@ class MADDetectorImpl:
         if len(series) < max(2, config.min_points):
             return AlertEvaluationResult(value=None, breaches=[])
 
-        def transform(seq: list[float]) -> list[float]:
+        def transform(seq: list[float]) -> np.ndarray:
             if config.on == "value":
-                return seq
+                return np.array(seq)
             if config.on == "delta":
-                return [b - a for a, b in zip(seq[:-1], seq[1:])]
-            return seq
+                return np.diff(seq)
+            return np.array(seq)
 
         x = transform(series)
         tail = x[-config.window - 1 :] if len(x) > config.window + 1 else x
@@ -38,8 +39,8 @@ class MADDetectorImpl:
 
         current = tail[-1]
         baseline = tail[:-1]
-        m = median(baseline)
-        mad = median([abs(v - m) for v in baseline])
+        m = np.median(baseline)
+        mad = np.median(np.abs(baseline - m))
         robust = 0.6745 * (current - m) / (mad + 1e-12)
 
         breaches: list[str] = []
