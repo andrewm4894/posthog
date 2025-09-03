@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Seed synthetic events into a local PostHog dev stack via /e endpoint.
+Generate synthetic events for development and testing via /e endpoint.
 
 This command generates realistic event data for development and testing purposes.
 It supports various timestamp distributions, event types, and rate limiting options.
@@ -19,7 +19,7 @@ from posthog.models import Team
 
 
 class Command(BaseCommand):
-    help = "Seed synthetic events into a local PostHog dev stack via /e endpoint"
+    help = "Generate synthetic events for development and testing via /e endpoint"
 
     def add_arguments(self, parser):
         parser.add_argument(
