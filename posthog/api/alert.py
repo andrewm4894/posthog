@@ -58,6 +58,7 @@ class AlertCheckSerializer(serializers.ModelSerializer):
             "id",
             "created_at",
             "calculated_value",
+            "raw_value",
             "state",
             "targets_notified",
         ]
