@@ -34,61 +34,59 @@ interface AlertListItemProps {
     onClick: () => void
 }
 
+const DETECTOR_CONFIGS = {
+    threshold: (alert: AlertType) => {
+        const bounds = alert.threshold?.configuration?.bounds
+        const isPercentage = alert.threshold?.configuration.type === InsightThresholdType.PERCENTAGE
+
+        if (!bounds?.lower && !bounds?.upper) {
+            return null
+        }
+
+        const parts = []
+        if (bounds?.lower != null) {
+            const value = isPercentage ? bounds.lower * 100 : bounds.lower
+            const suffix = isPercentage ? '%' : ''
+            parts.push(`low ${value}${suffix}`)
+        }
+        if (bounds?.upper != null) {
+            const value = isPercentage ? bounds.upper * 100 : bounds.upper
+            const suffix = isPercentage ? '%' : ''
+            parts.push(`high ${value}${suffix}`)
+        }
+        return parts.join(' · ')
+    },
+    zscore: (alert: AlertType) => {
+        const config = alert.config?.detector_config
+        const threshold = config?.z_threshold || 3.0
+        const direction = config?.direction || 'both'
+        const on = config?.on || 'value'
+        const window = config?.window || 30
+        return `z=${threshold} · ${direction} · ${on} · w=${window}`
+    },
+    mad: (alert: AlertType) => {
+        const config = alert.config?.detector_config
+        const k = config?.k || 3.5
+        const direction = config?.direction || 'both'
+        const on = config?.on || 'value'
+        const window = config?.window || 30
+        return `k=${k} · ${direction} · ${on} · w=${window}`
+    },
+} as const
+
 export function AlertListItem({ alert, onClick }: AlertListItemProps): JSX.Element {
-    const bounds = alert.threshold?.configuration?.bounds
-    const isPercentage = alert.threshold?.configuration.type === InsightThresholdType.PERCENTAGE
-    const detectorType = alert.config?.detector_config?.type
+    const detectorType = alert.config?.detector_config?.type || 'threshold'
 
-    const renderDetectorParams = (): JSX.Element | null => {
+    const getDetectorParams = (): string | null => {
         if (!alert.enabled) {
-            return <div className="text-secondary pl-3">Disabled</div>
+            return 'Disabled'
         }
 
-        // Threshold detector parameters
-        if (!detectorType || detectorType === 'threshold') {
-            if (bounds?.lower != null || bounds?.upper != null) {
-                return (
-                    <div className="text-secondary pl-3">
-                        {bounds?.lower != null &&
-                            `Low ${isPercentage ? bounds.lower * 100 : bounds.lower}${isPercentage ? '%' : ''}`}
-                        {bounds?.lower != null && bounds?.upper != null ? ' · ' : ''}
-                        {bounds?.upper != null &&
-                            `High ${isPercentage ? bounds.upper * 100 : bounds.upper}${isPercentage ? '%' : ''}`}
-                    </div>
-                )
-            }
-        }
-
-        // Z-score detector parameters
-        if (detectorType === 'zscore') {
-            const config = alert.config?.detector_config
-            const window = config?.window || 30
-            const threshold = config?.z_threshold || 3.0
-            const direction = config?.direction || 'both'
-            const on = config?.on || 'value'
-            return (
-                <div className="text-secondary pl-3">
-                    {threshold}σ · {direction} · {on} · {window}w
-                </div>
-            )
-        }
-
-        // MAD detector parameters
-        if (detectorType === 'mad') {
-            const config = alert.config?.detector_config
-            const k = config?.k || 3.5
-            const direction = config?.direction || 'both'
-            const on = config?.on || 'value'
-            const window = config?.window || 30
-            return (
-                <div className="text-secondary pl-3">
-                    {k}k · {direction} · {on} · {window}w
-                </div>
-            )
-        }
-
-        return null
+        const configFn = DETECTOR_CONFIGS[detectorType as keyof typeof DETECTOR_CONFIGS]
+        return configFn ? configFn(alert) : null
     }
+
+    const params = getDetectorParams()
 
     return (
         <LemonButton type="secondary" onClick={onClick} data-attr="alert-list-item" fullWidth>
@@ -97,7 +95,7 @@ export function AlertListItem({ alert, onClick }: AlertListItemProps): JSX.Eleme
                     <span>{alert.name}</span>
                     <AlertStateIndicator alert={alert} />
 
-                    {renderDetectorParams()}
+                    {params && <div className="text-secondary pl-3">{params}</div>}
                 </div>
 
                 <ProfileBubbles limit={4} people={alert.subscribed_users?.map(({ email }) => ({ email }))} />
