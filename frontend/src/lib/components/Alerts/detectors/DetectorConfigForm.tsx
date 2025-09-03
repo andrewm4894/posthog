@@ -149,13 +149,14 @@ export function DetectorConfigForm({
                 <div className="flex flex-wrap items-center gap-3">
                     <div className="w-24 text-muted-alt">What</div>
                     <LemonField name="series_index">
-                        <LemonSelect
-                            className="w-64"
-                            value={seriesIndex ?? 0}
-                            onChange={(val) => onSeriesChange?.(val)}
-                            options={seriesOptions ?? []}
-                        />
-                    </LemonField>
+                        <div>
+                            <LemonSelect
+                                className="w-64"
+                                value={seriesIndex ?? 0}
+                                onChange={(val) => onSeriesChange?.(val)}
+                                options={seriesOptions ?? []}
+                            />
+                        </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
