@@ -17,6 +17,7 @@ from posthog.caching.fetch_from_cache import InsightResult
 from posthog.models import AlertConfiguration, Insight
 from posthog.models.instance_setting import get_instance_setting
 from posthog.tasks.alerts.detectors.base import DetectorContext, get_detector
+from posthog.tasks.alerts.detectors.mad import MADConfig
 from posthog.tasks.alerts.detectors.threshold import ThresholdBounds, ThresholdConfig
 from posthog.tasks.alerts.detectors.zscore import ZScoreConfig
 from posthog.tasks.alerts.utils import NON_TIME_SERIES_DISPLAY_TYPES, AlertEvaluationResult
@@ -110,6 +111,15 @@ def check_trends_alert(alert: AlertConfiguration, insight: Insight, query: Trend
                 min_points=int(detector_cfg.get("min_points", 10)),
             )
             return get_detector("zscore").evaluate(ctx, cfg)
+        elif dtype == "mad":
+            cfg = MADConfig(
+                window=int(detector_cfg.get("window", 30)),
+                on=str(detector_cfg.get("on", "value")),
+                k=float(detector_cfg.get("k", 3.5)),
+                direction=str(detector_cfg.get("direction", "both")),
+                min_points=int(detector_cfg.get("min_points", 10)),
+            )
+            return get_detector("mad").evaluate(ctx, cfg)
         else:
             # default threshold detector
             bounds = detector_cfg.get("bounds", {})
