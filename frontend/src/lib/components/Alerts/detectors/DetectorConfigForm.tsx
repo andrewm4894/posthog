@@ -25,14 +25,14 @@ export function DetectorConfigForm({
             <div className="space-y-4">
                 <div className="flex flex-wrap items-center gap-3">
                     <div className="w-24 text-muted-alt">What</div>
-                    <div>
+                    <LemonField name="series_index">
                         <LemonSelect
                             className="w-64"
                             value={seriesIndex ?? 0}
                             onChange={(val) => onSeriesChange?.(val)}
                             options={seriesOptions ?? []}
                         />
-                    </div>
+                    </LemonField>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -149,14 +149,13 @@ export function DetectorConfigForm({
                 <div className="flex flex-wrap items-center gap-3">
                     <div className="w-24 text-muted-alt">What</div>
                     <LemonField name="series_index">
-                        <div>
-                            <LemonSelect
-                                className="w-64"
-                                value={seriesIndex ?? 0}
-                                onChange={(val) => onSeriesChange?.(val)}
-                                options={seriesOptions ?? []}
-                            />
-                        </div>
+                        <LemonSelect
+                            className="w-64"
+                            value={seriesIndex ?? 0}
+                            onChange={(val) => onSeriesChange?.(val)}
+                            options={seriesOptions ?? []}
+                        />
+                    </LemonField>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
