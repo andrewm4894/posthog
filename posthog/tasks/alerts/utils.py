@@ -162,7 +162,8 @@ def trigger_alert_hog_functions(alert: AlertConfiguration, properties: dict) -> 
 def send_notifications_for_breaches(alert: AlertConfiguration, breaches: list[str]) -> None:
     email_targets = alert.subscribed_users.all().values_list("email", flat=True)
     if email_targets:
-        subject = f"PostHog alert {alert.name} is firing"
+        project_name = alert.team.project.name
+        subject = f"PostHog alert {alert.name} is firing [{project_name}]"
         campaign_key = f"alert-firing-notification-{alert.id}-{timezone.now().timestamp()}"
         insight_url = f"/project/{alert.team.pk}/insights/{alert.insight.short_id}"
         alert_url = f"{insight_url}?alert_id={alert.id}"
@@ -176,6 +177,7 @@ def send_notifications_for_breaches(alert: AlertConfiguration, breaches: list[st
                 "insight_name": alert.insight.name,
                 "alert_url": alert_url,
                 "alert_name": alert.name,
+                "project_name": project_name,
             },
         )
 
@@ -192,7 +194,8 @@ def send_notifications_for_errors(alert: AlertConfiguration, error: dict) -> Non
     logger.info("Sending alert error notifications", alert_id=alert.id, error=error)
 
     # TODO: uncomment this after checking errors sent
-    # subject = f"PostHog alert {alert.name} check failed to evaluate"
+    # project_name = alert.team.project.name
+    # subject = f"PostHog alert {alert.name} check failed to evaluate [{project_name}]"
     # campaign_key = f"alert-firing-notification-{alert.id}-{timezone.now().timestamp()}"
     # insight_url = f"/project/{alert.team.pk}/insights/{alert.insight.short_id}"
     # alert_url = f"{insight_url}?alert_id={alert.id}"
@@ -206,6 +209,7 @@ def send_notifications_for_errors(alert: AlertConfiguration, error: dict) -> Non
     #         "insight_name": alert.insight.name,
     #         "alert_url": alert_url,
     #         "alert_name": alert.name,
+    #         "project_name": project_name,
     #     },
     # )
     # targets = alert.subscribed_users.all().values_list("email", flat=True)
