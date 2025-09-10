@@ -341,6 +341,11 @@ class TestAlertChecks(APIBaseTest, ClickhouseDestroyTablesMixin):
         assert email.to[0]["recipient"] == "user1@posthog.com"
         assert "first anomaly description" in email.html_body
         assert "second anomaly description" in email.html_body
+        
+        # Test that project name appears in subject and email body
+        project_name = alert.team.project.name
+        assert f"[{project_name}]" in email.subject
+        assert f"[{project_name}]" in email.html_body
 
     def test_alert_not_recalculated_when_not_due(
         self, mock_send_notifications_for_breaches: MagicMock, mock_send_errors: MagicMock
