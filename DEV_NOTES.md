@@ -187,6 +187,65 @@ docker compose -f docker-compose.dev-full.yml up -d kafka_ui
 - Compose: `docker compose -f docker-compose.dev-full.yml logs -f <service>`
 - App logs we captured: `~/compose_up.log`, `~/compose_migrate.log`
 
+## Alternative: Native Development with `bin/start --minimal`
+
+For native development (not Docker-based), use the `bin/start --minimal` command which runs services locally with mprocs.
+
+### Prerequisites
+
+1. **Python symlink**: Create system-wide symlink for `python` command:
+   ```bash
+   sudo ln -s /usr/bin/python3 /usr/local/bin/python
+   ```
+
+2. **Environment setup**: Create `.env` file with required variables:
+   ```bash
+   echo "SECRET_KEY=dev-secret-key-for-local-development-only" > .env
+   echo "DATABASE_URL=postgresql://posthog:posthog@localhost:5432/posthog" >> .env
+   echo "REDIS_URL=redis://localhost:6379" >> .env
+   ```
+
+3. **Dependencies**: Install Python dependencies with uv:
+   ```bash
+   uv sync
+   ```
+
+4. **Docker services**: Start minimal Docker stack for infrastructure:
+   ```bash
+   docker compose -f docker-compose.dev-minimal.yml up -d
+   ```
+
+### Running
+
+```bash
+bin/start --minimal
+```
+
+This starts:
+- Backend (Django + uvicorn)
+- Celery worker and beat
+- Plugin server
+- Frontend (Vite)
+- Rust services (capture, feature-flags, etc.)
+
+### Key Fixes Applied
+
+- Updated `bin/mprocs-minimal.yaml` to use `uv run python` instead of `python`
+- Updated `bin/start-backend` and `bin/start-celery` to use `uv run`
+- Added Python symlink to resolve "python not found" errors
+- Added required environment variables to `.env`
+
+### Current Issues
+
+- **ClickHouse Migration**: The `migrate-clickhouse` service fails because it tries to use cluster operations (`ON CLUSTER`) but the minimal Docker setup doesn't have proper cluster configuration
+- **Environment Variables**: The `.env` file isn't automatically loaded by mprocs processes, so we added `. .env` to each service in the mprocs config (using `.` instead of `source` for POSIX compatibility)
+
+### Remaining Work
+
+- Fix ClickHouse cluster configuration for single-node setup
+- Ensure all environment variables are properly loaded
+- Test that all services start successfully
+
 ## Common One‑Liners
 
 ```bash
