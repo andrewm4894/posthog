@@ -324,7 +324,7 @@ export function LLMAnalyticsScene(): JSX.Element {
                 {!hasSentAiGenerationEventLoading && !hasSentAiGenerationEvent && <IngestionStatusCheck />}
                 <SceneTitleSection
                     name="LLM Analytics"
-                    description="Analyze and understand your LLM usage and performance."
+                    description="Analyze and understand your LLM usage and performance!!!"
                     resourceType={{
                         type: 'llm_analytics',
                     }}
