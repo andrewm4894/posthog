@@ -72,7 +72,9 @@ Processes and queries LLM data using HogQL (PostHog's SQL-like query language):
 - `TracesQueryRunnerV2` - Optimized version with better performance
 - `TraceQueryRunner` - Single trace details with full event tree
 - `TeamTaxonomyQueryRunner` - Property definitions and schemas
-- `VectorSearchQueryRunner` - Semantic search over traces/generations
+- `SuggestedQuestionsQueryRunner` - AI-suggested analysis questions
+- `ActorsPropertyTaxonomyQueryRunner` - Person/group property schemas
+- `SessionBatchEventsQueryRunner` - Session event batching for AI analysis
 
 **API Endpoints** (`products/llm_analytics/backend/api/`):
 - `/api/llm_proxy/` - LLM proxy for playground feature

@@ -102,11 +102,13 @@ cd rust/capture && cargo test
 
 ### Backend (Python/Django)
 ```
-posthog/hogql_queries/ai/          # Query runners
-├── traces_query_runner.py         # Main trace queries
-├── trace_query_runner.py          # Single trace details
-├── team_taxonomy_query_runner.py  # Schema/properties
-└── vector_search_query_runner.py  # Semantic search
+posthog/hogql_queries/ai/          # AI-related query runners
+├── traces_query_runner.py         # Main trace queries (LLMA)
+├── trace_query_runner.py          # Single trace details (LLMA)
+├── team_taxonomy_query_runner.py  # Schema/properties (LLMA)
+├── suggested_questions_query_runner.py  # AI analysis suggestions
+├── session_batch_events_query_runner.py # Session event batching
+└── vector_search_query_runner.py  # Semantic search (for actions, not LLMA)
 
 products/llm_analytics/backend/     # Django app
 ├── api/                           # REST API endpoints
